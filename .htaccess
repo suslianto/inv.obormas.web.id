@@ -1,0 +1,17 @@
+RewriteEngine On
+
+# ATURAN BARU: Jika URL adalah 'home', arahkan ke 'index.php'
+RewriteRule ^home$ index.php [L]
+
+# --- Aturan yang sudah ada (untuk menghilangkan ekstensi file) ---
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+RewriteCond %{REQUEST_FILENAME}.php -f [NC]
+RewriteRule ^(.*)$ $1.php [L,QSA]
+
+RewriteCond %{REQUEST_FILENAME}.htm -f [NC]
+RewriteRule ^(.*)$ $1.htm [L,QSA]
+
+RewriteCond %{REQUEST_FILENAME}.html -f [NC]
+RewriteRule ^(.*)$ $1.html [L,QSA]
