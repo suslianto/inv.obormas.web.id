@@ -1,413 +1,233 @@
-<!DOCTYPE html>
-<html>
 <?php
+// ===================================================================
+// KONFIGURASI DAN INISIALISASI
+// ===================================================================
 include "configuration/config_etc.php";
 include "configuration/config_include.php";
-etc();encryption();session();connect();head();body();timing();
-//alltotal();
+etc();
+encryption();
+session();
+connect();
+head();
+body();
+timing();
 pagination();
-?>
 
-<?php
+// ===================================================================
+// CEK STATUS LOGIN
+// ===================================================================
 if (!login_check()) {
-?>
-<meta http-equiv="refresh" content="0; url=logout" />
-<?php
-exit(0);
+    echo '<meta http-equiv="refresh" content="0; url=logout" />';
+    exit(0);
 }
-?>
-        <div class="wrapper">
-<?php
-theader();
-menu();
-?>
-            <div class="content-wrapper">
-                <section class="content-header">
-</section>
-                <!-- Main content -->
-                <section class="content">
-                    <div class="row">
-            <div class="col-lg-12">
-                        <!-- ./col -->
 
-<!-- SETTING START-->
-
-<?php
+// ===================================================================
+// PENGATURAN HALAMAN
+// ===================================================================
 error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
 include "configuration/config_chmod.php";
-$halaman = "supplier"; // data
-$dataapa = "Supplier"; // data apa
-$tabeldatabase = "supplier"; // tabel database
-$chmod = $chmenu2; // Hak akses Menu
-$forward = mysqli_real_escape_string($conn, $tabeldatabase); // tabel database
-$forwardpage = mysqli_real_escape_string($conn, $halaman); // halaman
-$search = $_POST['search'];
-$insert = $_POST['insert'];
+$halaman       = "supplier";
+$dataapa       = "Supplier";
+$tabeldatabase = "supplier";
+$chmod         = $chmenu2;
+$forward       = mysqli_real_escape_string($conn, $tabeldatabase);
+$forwardpage   = mysqli_real_escape_string($conn, $halaman);
+$no            = isset($_GET['no']) ? $_GET['no'] : '';
+$alert_script  = ""; // Variabel untuk menyimpan skrip SweetAlert
 
- function autoNumber(){
-  include "configuration/config_connect.php";
-  global $forward;
-  $query = "SELECT MAX(RIGHT(kode, 4)) as max_id FROM $forward ORDER BY kode";
-  $result = mysqli_query($conn, $query);
-  $data = mysqli_fetch_array($result);
-  $id_max = $data['max_id'];
-  $sort_num = (int) substr($id_max, 1, 4);
-  $sort_num++;
-  $new_code = sprintf("%04s", $sort_num);
-  return $new_code;
- }
-?>
+// ===================================================================
+// FUNGSI BANTUAN (AUTO NUMBER)
+// ===================================================================
+function autoNumber() {
+    global $conn;
+    $query    = "SELECT MAX(CAST(SUBSTRING(kode, 4) AS UNSIGNED)) as max_id FROM supplier WHERE kode LIKE 'SUP%'";
+    $result   = mysqli_query($conn, $query);
+    $data     = mysqli_fetch_array($result);
+    $id_max   = $data['max_id'];
+    $sort_num = ($id_max === null) ? 1 : $id_max + 1;
+    return sprintf("SUP%03d", $sort_num);
+}
 
+// ===================================================================
+// PROSES FORM (INSERT/UPDATE)
+// ===================================================================
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan'])) {
+    // Sanitasi Input
+    $kode       = mysqli_real_escape_string($conn, $_POST["kode"]);
+    $nama       = mysqli_real_escape_string($conn, $_POST["nama"]);
+    $tgldaftar  = mysqli_real_escape_string($conn, $_POST["tgldaftar"]);
+    $nohp       = mysqli_real_escape_string($conn, $_POST["nohp"]);
+    $alamat     = mysqli_real_escape_string($conn, $_POST["alamat"]);
+    // Kolom keterangan dihapus dari proses
+    $insert     = mysqli_real_escape_string($conn, $_POST["insert"]);
 
-<!-- SETTING STOP -->
-
-
-<!-- BREADCRUMB -->
-
-<ol class="breadcrumb ">
-<li><a href="<?php echo $_SESSION['baseurl']; ?>">Dashboard </a></li>
-<li><a href="<?php echo $halaman;?>"><?php echo $dataapa ?></a></li>
-<?php
-
-if ($search != null || $search != "") {
-?>
- <li> <a href="<?php echo $halaman;?>">Data <?php echo $dataapa ?></a></li>
-  <li class="active"><?php
-    echo $search;
-?></li>
-  <?php
-} else {
-?>
- <li class="active">Data <?php echo $dataapa ?></li>
-  <?php
+    if ($insert == '3') { // Mode Update
+        if ($chmod >= 3 || $_SESSION['jabatan'] == 'admin') {
+            // Perbaikan: Menghapus kolom 'keterangan' dari query UPDATE
+            $sql_update = "UPDATE $tabeldatabase SET nama='$nama', tgldaftar='$tgldaftar', nohp='$nohp', alamat='$alamat' WHERE kode='$kode'";
+            if (mysqli_query($conn, $sql_update)) {
+                $alert_script = "swal('Berhasil!', 'Data supplier telah diupdate!', 'success').then(function() { window.location = '$forwardpage'; });";
+            } else {
+                $error_msg = addslashes(mysqli_error($conn));
+                $alert_script = "swal('Gagal!', 'Gagal mengupdate data. Error: $error_msg', 'error');";
+            }
+        } else {
+            $alert_script = "swal('Akses Ditolak!', 'Anda tidak memiliki izin untuk mengupdate data!', 'error');";
+        }
+    } else { // Mode Insert
+        if ($chmod >= 2 || $_SESSION['jabatan'] == 'admin') {
+            $sql_check    = "SELECT kode FROM $tabeldatabase WHERE kode='$kode'";
+            $result_check = mysqli_query($conn, $sql_check);
+            if (mysqli_num_rows($result_check) > 0) {
+                $alert_script = "swal('Gagal!', 'Kode supplier sudah ada.', 'error');";
+            } else {
+                // Perbaikan: Menghapus kolom 'keterangan' dari query INSERT
+                $sql_insert = "INSERT INTO $tabeldatabase (kode, tgldaftar, nama, alamat, nohp) VALUES ('$kode', '$tgldaftar', '$nama', '$alamat', '$nohp')";
+                if (mysqli_query($conn, $sql_insert)) {
+                    $alert_script = "swal('Berhasil!', 'Data supplier telah disimpan!', 'success').then(function() { window.location = '$forwardpage'; });";
+                } else {
+                    $error_msg = addslashes(mysqli_error($conn));
+                    $alert_script = "swal('Gagal!', 'Data gagal disimpan. Error: $error_msg', 'error');";
+                }
+            }
+        } else {
+            $alert_script = "swal('Akses Ditolak!', 'Anda tidak memiliki izin untuk menambah data!', 'error');";
+        }
+    }
 }
 ?>
-</ol>
-
-<!-- BREADCRUMB -->
-
-<!-- BOX INSERT BERHASIL -->
-
-         <script>
- window.setTimeout(function() {
-    $("#myAlert").fadeTo(500, 0).slideUp(1000, function(){
-        $(this).remove();
-    });
-}, 5000);
-</script>
-
-       <!-- BOX INFORMASI -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Manajemen Supplier</title>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+</head>
+<body class="hold-transition skin-purple sidebar-mini">
+<div class="wrapper">
     <?php
-if ($chmod >= 2 || $_SESSION['jabatan'] == 'admin') {
-  ?>
-
-
-  <!-- KONTEN BODY AWAL -->
-                            <div class="box box-default">
-            <div class="box-header with-border">
-              <h3 class="box-title">Data <?php echo $dataapa;?></h3>
-            </div>
-                                <!-- /.box-header -->
-
-                                <div class="box-body">
-                <div class="table-responsive">
-    <!----------------KONTEN------------------->
-      <?php
-    error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
-
-    $kode=$nama=$tgldaftar=$alamat=$nohp="";
-    $no = $_GET["no"];
-    $insert = '1';
-
-
-
-    if(($no != null || $no != "") && ($chmod >= 3 || $_SESSION['jabatan'] == 'admin')){
-
-         $sql="select * from $tabeldatabase where no='$no'";
-                  $hasil2 = mysqli_query($conn,$sql);
-
-
-                  while ($fill = mysqli_fetch_assoc($hasil2)){
-
-
-          $kode = $fill["kode"];
-          $nama = $fill["nama"];
-          $tgldaftar = $fill["tgldaftar"];
-          $alamat = $fill["alamat"];
-          $nohp = $fill["nohp"];
-          $keterangan = $fill["keterangan"];
-                  $insert = '3';
-
-    }
-    }
+    theader();
+    menu();
     ?>
-  <div id="main">
-   <div class="container-fluid">
+    <div class="content-wrapper">
+        <section class="content-header"></section>
+        <section class="content">
+            <!-- BREADCRUMB -->
+            <ol class="breadcrumb">
+                <li><a href="<?php echo $_SESSION['baseurl']; ?>">Dashboard</a></li>
+                <li><a href="<?php echo $halaman; ?>"><?php echo $dataapa; ?></a></li>
+                <li class="active"><?php echo !empty($no) ? 'Edit' : 'Tambah'; ?> <?php echo $dataapa; ?></li>
+            </ol>
+            
+            <?php if ($chmod >= 2 || $_SESSION['jabatan'] == 'admin') : ?>
+                <?php
+                // Ambil data untuk form edit
+                $kode_form = autoNumber();
+                $nama_form = "";
+                $tgldaftar_form = date("Y-m-d");
+                $alamat_form = "";
+                $nohp_form = "";
+                $insert_mode = '1';
 
-          <form class="form-horizontal" method="post" action="add_<?php echo $halaman; ?>" id="Myform">
-              <div class="box-body">
-
-        <div class="row">
-                <div class="form-group col-md-6 col-xs-12" >
-                  <label for="kode" class="col-sm-3 control-label">Kode Supplier:</label>
-                  <div class="col-sm-9">
-                   <?php  if($no == null || $no ==""){ ?>
-                    <input type="text" class="form-control" id="kode" name="kode" value="<?php echo autoNumber(); ?>" maxlength="50" required readonly>
-                  <?php }else{ ?>
-             <input type="text" class="form-control" id="kode" name="kode" value="<?php echo $kode; ?>"  maxlength="50" required readonly>
-          <?php } ?>
-          </div>
-                </div>
-        </div>
-
-        <div class="row">
-           <div class="form-group col-md-6 col-xs-12" >
-                  <label for="nama" class="col-sm-3 control-label">Nama Supplier:</label>
-                  <div class="col-sm-9">
-                    <input type="text" class="form-control" id="nama" name="nama" value="<?php echo $nama; ?>" placeholder="Masukan Nama Supplier" maxlength="50" required>
-                  </div>
-                </div>
-        </div>
-
-        <div class="row">
-           <div class="form-group col-md-6 col-xs-12" >
-                  <label for="tgldaftar" class="col-sm-3 control-label">Tanggal Daftar:</label>
-                  <div class="col-sm-9">
-                    <input type="text" class="form-control pull-right" id="datepicker2" name="tgldaftar" placeholder="Masukan Tanggal Daftar" value="<?php echo $tgldaftar; ?>" >
-                  </div>
-                </div>
-        </div>
-
-        <div class="row">
-           <div class="form-group col-md-6 col-xs-12" >
-                  <label for="nohp" class="col-sm-3 control-label">No Handphone:</label>
-                  <div class="col-sm-9">
-                    <input type="text" class="form-control" id="nohp" name="nohp" value="<?php echo $nohp; ?>" placeholder="Masukan Nomor Handphone" maxlength="50" required>
-                  </div>
-                </div>
-        </div>
-
-        <div class="row">
-           <div class="form-group col-md-6 col-xs-12" >
-                  <label for="alamat" class="col-sm-3 control-label">Alamat:</label>
-                  <div class="col-sm-9">
-                  <textarea class="form-control" rows="3" id="alamat" name="alamat" maxlength="255" placeholder="Alamat Lengkap" required><?php echo $alamat; ?></textarea>
-                   </div>
-                </div>
-        </div>
-
-
-      <input type="hidden" class="form-control" id="insert" name="insert" value="<?php echo $insert;?>" maxlength="1" >
-
-
-              </div>
-              <!-- /.box-body -->
-              <div class="box-footer" >
-                <button type="submit" class="btn btn-default pull-left btn-flat" name="simpan" onclick="document.getElementById('Myform').submit();" ><span class="glyphicon glyphicon-floppy-disk"></span> Simpan</button>
-              </div>
-              <!-- /.box-footer -->
-
-
- </form>
-</div>
-<?php
-
-
-   if($_SERVER["REQUEST_METHOD"] == "POST"){
-
-          $kode = mysqli_real_escape_string($conn, $_POST["kode"]);
-          $nama = mysqli_real_escape_string($conn, $_POST["nama"]);
-          $tgldaftar = mysqli_real_escape_string($conn, $_POST["tgldaftar"]);
-          $nohp = mysqli_real_escape_string($conn, $_POST["nohp"]);
-          $alamat = mysqli_real_escape_string($conn, $_POST["alamat"]);
-          $insert = ($_POST["insert"]);
-
-
-             $sql="select * from $tabeldatabase where kode='$kode'";
-        $result=mysqli_query($conn,$sql);
-
-              if(mysqli_num_rows($result)>0){
-          if($chmod >= 3 || $_SESSION['jabatan'] == 'admin'){
-                  $sql1 = "update $tabeldatabase set nama='$nama',nohp='$nohp',alamat='$alamat' where kode='$kode'";
-                  $updatean = mysqli_query($conn, $sql1);
-                  echo "<script type='text/javascript'>  alert('Berhasil, Data telah diupdate!'); </script>";
-                  echo "<script type='text/javascript'>window.location = '$forwardpage';</script>";
-        }else{
-          echo "<script type='text/javascript'>  alert('Gagal, Data gagal diupdate!'); </script>";
-          echo "<script type='text/javascript'>window.location = '$forwardpage';</script>";
-          }
-        }
-      else if(( $chmod >= 2 || $_SESSION['jabatan'] == 'admin')){
-           $sql2 = "insert into $tabeldatabase values( '$kode','$tgldaftar','$nama','$alamat','$nohp','')";
-           if(mysqli_query($conn, $sql2)){
-           echo "<script type='text/javascript'>  alert('Berhasil, Data telah disimpan!'); </script>";
-           echo "<script type='text/javascript'>window.location = '$forwardpage';</script>";
-         }else{
-           echo "<script type='text/javascript'>  alert('Gagal, Data gagal disimpan!'); </script>";
-           echo "<script type='text/javascript'>window.location = '$forwardpage';</script>";
-         }
-           }
-
-  }
-
-
-         ?>
-
-<script>
-function myFunction() {
-    document.getElementById("Myform").submit();
-}
-</script>
-
-    <!-- KONTEN BODY AKHIR -->
-
-                                </div>
-                </div>
-
-                                <!-- /.box-body -->
+                if (!empty($no) && ($chmod >= 3 || $_SESSION['jabatan'] == 'admin')) {
+                    $sql_edit   = "SELECT * FROM $tabeldatabase WHERE no='$no'";
+                    $hasil_edit = mysqli_query($conn, $sql_edit);
+                    if ($fill = mysqli_fetch_assoc($hasil_edit)) {
+                        $kode_form = $fill["kode"];
+                        $nama_form = $fill["nama"];
+                        $tgldaftar_form = $fill["tgldaftar"];
+                        $alamat_form = $fill["alamat"];
+                        $nohp_form = $fill["nohp"];
+                        $insert_mode = '3';
+                    }
+                }
+                ?>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="box box-primary">
+                            <div class="box-header with-border">
+                                <h3 class="box-title">Formulir <?php echo $dataapa; ?></h3>
                             </div>
+                            <form class="form-horizontal" method="post" action="" id="Myform">
+                                <div class="box-body">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="kode" class="col-sm-3 control-label">Kode Supplier</label>
+                                            <div class="col-sm-9">
+                                                <input type="text" class="form-control" id="kode" name="kode" value="<?php echo htmlspecialchars($kode_form); ?>" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="nama" class="col-sm-3 control-label">Nama Supplier</label>
+                                            <div class="col-sm-9">
+                                                <input type="text" class="form-control" id="nama" name="nama" value="<?php echo htmlspecialchars($nama_form); ?>" placeholder="Masukan Nama Supplier" required>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="datepicker" class="col-sm-3 control-label">Tanggal Daftar</label>
+                                            <div class="col-sm-9">
+                                                <input type="text" class="form-control" id="datepicker" name="tgldaftar" value="<?php echo htmlspecialchars($tgldaftar_form); ?>" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="nohp" class="col-sm-3 control-label">No Handphone</label>
+                                            <div class="col-sm-9">
+                                                <input type="text" class="form-control" id="nohp" name="nohp" value="<?php echo htmlspecialchars($nohp_form); ?>" placeholder="Masukan Nomor Handphone">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="alamat" class="col-sm-3 control-label">Alamat</label>
+                                            <div class="col-sm-9">
+                                                <textarea class="form-control" rows="3" id="alamat" name="alamat" placeholder="Alamat Lengkap"><?php echo htmlspecialchars($alamat_form); ?></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="insert" value="<?php echo $insert_mode; ?>">
+                                </div>
+                                <div class="box-footer">
+                                    <button type="submit" class="btn btn-primary btn-flat" name="simpan"><i class="fa fa-save"></i> Simpan</button>
+                                    <a href="<?php echo $halaman; ?>" class="btn btn-danger btn-flat"><i class="fa fa-close"></i> Batal</a>
+                                </div>
+                            </form>
                         </div>
-
-<?php
-} else {
-?>
-   <div class="callout callout-danger">
-    <h4>Info</h4>
-    <b>Hanya user tertentu yang dapat mengakses halaman <?php echo $dataapa;?> ini .</b>
+                    </div>
+                </div>
+            <?php else : ?>
+                <div class="callout callout-danger">
+                    <h4>Akses Ditolak!</h4>
+                    <p>Anda tidak memiliki izin untuk mengakses halaman ini.</p>
+                </div>
+            <?php endif; ?>
+        </section>
     </div>
-    <?php
-}
-?>
-                        <!-- ./col -->
-                    </div>
-
-                    <!-- /.row -->
-                    <!-- Main row -->
-                    <div class="row">
-                        <!-- Left col -->
-                        <!-- /.Left col -->
-                    </div>
-                    <!-- /.row (main row) -->
-                </section>
-                <!-- /.content -->
-            </div>
-            <!-- /.content-wrapper -->
-            <?php  footer(); ?>
-            <div class="control-sidebar-bg"></div>
-        </div>
-          <!-- ./wrapper -->
+    <?php footer(); ?>
+    <div class="control-sidebar-bg"></div>
+</div>
+<!-- ./wrapper -->
 <script src="dist/plugins/jQuery/jquery-2.2.3.min.js"></script>
-        <script src="libs/1.11.4-jquery-ui.min.js"></script>
-        <script>
-  $.widget.bridge('uibutton', $.ui.button);
-</script>
-        <script src="dist/bootstrap/js/bootstrap.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
-        <script src="dist/plugins/morris/morris.min.js"></script>
-        <script src="dist/plugins/sparkline/jquery.sparkline.min.js"></script>
-        <script src="dist/plugins/jvectormap/jquery-jvectormap-1.2.2.min.js"></script>
-        <script src="dist/plugins/jvectormap/jquery-jvectormap-world-mill-en.js"></script>
-        <script src="dist/plugins/knob/jquery.knob.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.11.2/moment.min.js"></script>
-        <script src="dist/plugins/daterangepicker/daterangepicker.js"></script>
-        <script src="dist/plugins/datepicker/bootstrap-datepicker.js"></script>
-        <script src="dist/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js"></script>
-        <script src="dist/plugins/slimScroll/jquery.slimscroll.min.js"></script>
-        <script src="dist/plugins/fastclick/fastclick.js"></script>
-        <script src="dist/js/app.min.js"></script>
-        <script src="dist/js/demo.js"></script>
-    <script src="dist/plugins/datatables/jquery.dataTables.min.js"></script>
-    <script src="dist/plugins/datatables/dataTables.bootstrap.min.js"></script>
-    <script src="dist/plugins/slimScroll/jquery.slimscroll.min.js"></script>
-    <script src="dist/plugins/fastclick/fastclick.js"></script>
-    <script src="dist/plugins/select2/select2.full.min.js"></script>
-    <script src="dist/plugins/input-mask/jquery.inputmask.js"></script>
-    <script src="dist/plugins/input-mask/jquery.inputmask.date.extensions.js"></script>
-    <script src="dist/plugins/input-mask/jquery.inputmask.extensions.js"></script>
-    <script src="dist/plugins/timepicker/bootstrap-timepicker.min.js"></script>
-    <script src="dist/plugins/iCheck/icheck.min.js"></script>
+<script src="dist/bootstrap/js/bootstrap.min.js"></script>
+<script src="dist/plugins/datepicker/bootstrap-datepicker.js"></script>
+<script src="dist/plugins/slimScroll/jquery.slimscroll.min.js"></script>
+<script src="dist/plugins/fastclick/fastclick.js"></script>
+<script src="dist/js/app.min.js"></script>
 <script>
-  $(function () {
-    //Initialize Select2 Elements
-    $(".select2").select2();
-
-    //Datemask dd/mm/yyyy
-    $("#datemask").inputmask("yyyy-mm-dd", {"placeholder": "yyyy/mm/dd"});
-    //Datemask2 mm/dd/yyyy
-    $("#datemask2").inputmask("yyyy-mm-dd", {"placeholder": "yyyy/mm/dd"});
-    //Money Euro
-    $("[data-mask]").inputmask();
-
-    //Date range picker
-    $('#reservation').daterangepicker();
-    //Date range picker with time picker
-    $('#reservationtime').daterangepicker({timePicker: true, timePickerIncrement: 30, format: 'YYYY/MM/DD h:mm A'});
-    //Date range as a button
-    $('#daterange-btn').daterangepicker(
-        {
-          ranges: {
-            'Hari Ini': [moment(), moment()],
-            'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-            'Akhir 7 Hari': [moment().subtract(6, 'days'), moment()],
-            'Akhir 30 Hari': [moment().subtract(29, 'days'), moment()],
-            'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
-            'Akhir Bulan': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-          },
-          startDate: moment().subtract(29, 'days'),
-          endDate: moment()
-        },
-        function (start, end) {
-          $('#daterange-btn span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
-        }
-    );
-
-    //Date picker
-    $('#datepicker').datepicker({
-      autoclose: true
+    $(function() {
+        // Inisialisasi Datepicker
+        $('#datepicker').datepicker({
+            autoclose: true,
+            format: 'yyyy-mm-dd'
+        });
     });
 
-   $('.datepicker').datepicker({
-    dateFormat: 'yyyy-mm-dd'
- });
-
-   //Date picker 2
-   $('#datepicker2').datepicker('update', new Date());
-
-    $('#datepicker2').datepicker({
-      autoclose: true
-    });
-
-   $('.datepicker2').datepicker({
-    dateFormat: 'yyyy-mm-dd'
- });
-
-
-    //iCheck for checkbox and radio inputs
-    $('input[type="checkbox"].minimal, input[type="radio"].minimal').iCheck({
-      checkboxClass: 'icheckbox_minimal-blue',
-      radioClass: 'iradio_minimal-blue'
-    });
-    //Red color scheme for iCheck
-    $('input[type="checkbox"].minimal-red, input[type="radio"].minimal-red').iCheck({
-      checkboxClass: 'icheckbox_minimal-red',
-      radioClass: 'iradio_minimal-red'
-    });
-    //Flat red color scheme for iCheck
-    $('input[type="checkbox"].flat-red, input[type="radio"].flat-red').iCheck({
-      checkboxClass: 'icheckbox_flat-green',
-      radioClass: 'iradio_flat-green'
-    });
-
-    //Colorpicker
-    $(".my-colorpicker1").colorpicker();
-    //color picker with addon
-    $(".my-colorpicker2").colorpicker();
-
-    //Timepicker
-    $(".timepicker").timepicker({
-      showInputs: false
-    });
-  });
+    // Jalankan skrip SweetAlert jika ada
+    <?php if (!empty($alert_script)) : ?>
+        document.addEventListener("DOMContentLoaded", function() {
+            <?php echo $alert_script; ?>
+        });
+    <?php endif; ?>
 </script>
 </body>
 </html>
