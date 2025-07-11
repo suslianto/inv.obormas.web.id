@@ -432,7 +432,7 @@ setInterval(function(){ countdown(); },1000);
                 <tr>
                   <th style="width: 10px">#</th>
                   <th>Barang</th>
-                  <th>Terjual</th>
+                  <th>Keluar</th>
                   <th style="width: 40px">Persentase</th>
                 </tr>
                 </thead>
