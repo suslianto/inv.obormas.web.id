@@ -1,5 +1,6 @@
 <?php 
 include "configuration/config_connect.php";
+include "configuration/config_chmod.php";
 $nouser= $_SESSION['nouser'];
 $user= "SELECT * FROM user WHERE no='$nouser' ";
 $query = mysqli_query($conn, $user);
@@ -8,13 +9,23 @@ $nama = $row['nama'];
 $jabatan = $row['jabatan'];
 $avatar = $row['avatar'];
 
-
 $queryback="SELECT * FROM backset";
     $resultback=mysqli_query($conn,$queryback);
     $rowback=mysqli_fetch_assoc($resultback);
     $nama=$rowback['namabisnis1'];
-?>
 
+$nouser = $_SESSION['nouser'];
+$user_sql = "SELECT nama, jabatan, avatar FROM user WHERE no = ?";
+$stmt = mysqli_prepare($conn, $user_sql);
+mysqli_stmt_bind_param($stmt, "s", $nouser);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$row = mysqli_fetch_assoc($result);
+
+$nama_user = $row['nama'] ?? 'Pengguna';
+$jabatan = $row['jabatan'] ?? 'Tamu';
+$avatar = $row['avatar'] ?? 'dist/img/avatar.png';
+?>
 
 	<header class="main-header">
         <title><?php echo $nama;?></title>
@@ -29,24 +40,21 @@ $queryback="SELECT * FROM backset";
                 <nav class="navbar navbar-static-top">
                     <!-- Sidebar toggle button-->
                     <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button"> <span class="sr-only">Toggle navigation</span> </a>
-                    
-                    
-
-                    
+                   
                     <div class="navbar-custom-menu">
                         <ul class="nav navbar-nav">
                             <!-- User Account: style can be found in dropdown.less -->
                             <li class="dropdown user user-menu">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">
                                     <img src="<?php  echo $avatar; ?>" class="user-image" alt="User Image">
-                                    <span class="hidden-xs"> <?php  echo $nama; ?></span>
+                                    <span class="hidden-xs"> <?php  echo $nama_user; ?></span>
                                 </a>
                                 <ul class="dropdown-menu">
                                     <!-- User image -->
                                     <li class="user-header">
                                         <img src="<?php  echo $avatar; ?>" class="img-circle" alt="User Image">
                                         <p>
-                  <?php  echo $nama; ?> - <?php  echo $jabatan; ?></p>
+                                        <?php  echo $nama; ?> - <?php  echo $jabatan; ?></p>
                                     </li>
                                     </li>
                                     <!-- Menu Footer-->
@@ -62,7 +70,7 @@ $queryback="SELECT * FROM backset";
                             </li>
                             <!-- Control Sidebar Toggle Button -->
                             <li>
-</li>
+                            </li>
                         </ul>
                     </div>
                 </nav>
