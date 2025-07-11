@@ -37,8 +37,8 @@ if (empty($currentPage)) {
 // 3. Definisikan grup halaman TANPA ekstensi .php (SUDAH DIGABUNGKAN)
 $barangPages = ['add_barang', 'barang', 'edit_barang', 'cetak_barcode', 'barang_detail'];
 $atributPages = ['kategori', 'add_kategori', 'edit_kategori', 'merek', 'add_merek', 'edit_merek', 'satuan', 'add_satuan', 'edit_satuan'];
-$aktivitasPages = ['stok_masuk', 'stok_keluar', 'surat_kelola', 'stok_sesuaikan'];
-$stokPages = ['stok_barang', 'stok_menipis', 'mutasi']; // Ditambahkan
+$aktivitasPages = ['stok_masuk', 'stok_keluar', 'surat_kelola', 'stok_in', 'stok_out', 'stok_masuk_detail','stok_keluar_detail'];
+$stokPages = ['stok_barang', 'stok_menipis', 'mutasi',  'stok_sesuaikan',]; // Ditambahkan
 $laporanPages = ['laporan_stok', 'laporan_penyesuaian', 'laporan_arus']; // Ditambahkan
 $supplierPelangganPages = ['supplier', 'add_supplier', 'edit_supplier', 'customer', 'add_customer', 'edit_customer'];
 $manajemenUserPages = ['admin', 'add_admin', 'edit_admin', 'add_jabatan', 'edit_jabatan'];
@@ -78,10 +78,9 @@ $pengaturanPages = ['set_general', 'set_themes', 'backup'];
             <li class="treeview <?php if (in_array($currentPage, $aktivitasPages)) echo 'active menu-open'; ?>">
                 <a href="#"><i class="fa fa-retweet"></i> <span>Aktivitas</span> <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
                 <ul class="treeview-menu">
-                    <li class="<?php if ($currentPage == 'stok_masuk') echo 'active'; ?>"><a href="stok_masuk"><i class="fa fa-circle-o"></i> Barang Masuk</a></li>
-                    <li class="<?php if ($currentPage == 'stok_keluar') echo 'active'; ?>"><a href="stok_keluar"><i class="fa fa-circle-o"></i> Barang Keluar</a></li>
+                    <li class="<?php if ($currentPage == 'stok_masuk' || $currentPage == 'stok_in' || $currentPage == 'stok_masuk_detail') echo 'active'; ?>"><a href="stok_masuk"><i class="fa fa-circle-o"></i> Barang Masuk</a></li>
+                    <li class="<?php if ($currentPage == 'stok_keluar' || $currentPage == 'stok_out' || $currentPage == 'stok_keluar_detail') echo 'active'; ?>"><a href="stok_keluar"><i class="fa fa-circle-o"></i> Barang Keluar</a></li>
                     <li class="<?php if ($currentPage == 'surat_kelola') echo 'active'; ?>"><a href="surat_kelola"><i class="fa fa-circle-o"></i> Surat Jalan</a></li>
-                    <li class="<?php if ($currentPage == 'stok_sesuaikan') echo 'active'; ?>"><a href="stok_sesuaikan"><i class="fa fa-circle-o"></i> Penyesuaian</a></li>
                 </ul>
             </li>
             <?php endif; ?>
@@ -93,6 +92,7 @@ $pengaturanPages = ['set_general', 'set_themes', 'backup'];
                     <li class="<?php if ($currentPage == 'stok_barang') echo 'active'; ?>"><a href="stok_barang"><i class="fa fa-circle-o"></i> Data Stok</a></li>
                     <li class="<?php if ($currentPage == 'stok_menipis') echo 'active'; ?>"><a href="stok_menipis"><i class="fa fa-circle-o"></i> Stok Menipis</a></li>
                     <li class="<?php if ($currentPage == 'mutasi') echo 'active'; ?>"><a href="mutasi"><i class="fa fa-circle-o"></i> Mutasi</a></li>
+                    <li class="<?php if ($currentPage == 'stok_sesuaikan') echo 'active'; ?>"><a href="stok_sesuaikan"><i class="fa fa-circle-o"></i> Penyesuaian</a></li>
                 </ul>
             </li>
             <?php endif; ?>
