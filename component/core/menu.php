@@ -74,17 +74,6 @@ $pengaturanPages = ['set_general', 'set_themes', 'backup'];
             </li>
             <?php endif; ?>
 
-            <?php if (($chmenu3 ?? 0) >= 1 || ($_SESSION['jabatan'] ?? '') == 'admin'): ?>
-            <li class="treeview <?php if (in_array($currentPage, $atributPages)) echo 'active menu-open'; ?>">
-                <a href="#"><i class="fa fa-tags"></i> <span>Atribut Barang</span> <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
-                <ul class="treeview-menu">
-                    <li class="<?php if ($currentPage == 'kategori' || $currentPage == 'add_kategori' || $currentPage == 'edit_kategori' ) echo 'active'; ?>"><a href="kategori"><i class="fa fa-circle-o"></i> Kategori</a></li>
-                    <li class="<?php if ($currentPage == 'merek' || $currentPage == 'add_merek' || $currentPage == 'edit_merek') echo 'active'; ?>"><a href="merek"><i class="fa fa-circle-o"></i> Merk</a></li>
-                    <li class="<?php if ($currentPage == 'satuan' || $currentPage == 'add_satuan' || $currentPage == 'edit_satuan') echo 'active'; ?>"><a href="satuan"><i class="fa fa-circle-o"></i> Satuan</a></li>
-                </ul>
-            </li>
-            <?php endif; ?>
-
             <?php if (($chmenu5 ?? 0) >= 1 || ($_SESSION['jabatan'] ?? '') == 'admin'): ?>
             <li class="treeview <?php if (in_array($currentPage, $aktivitasPages)) echo 'active menu-open'; ?>">
                 <a href="#"><i class="fa fa-retweet"></i> <span>Aktivitas</span> <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
@@ -127,6 +116,17 @@ $pengaturanPages = ['set_general', 'set_themes', 'backup'];
                 <ul class="treeview-menu">
                     <li class="<?php if ($currentPage == 'supplier' || $currentPage == 'add_supplier' || $currentPage == 'edit_supplier') echo 'active'; ?>"><a href="supplier"><i class="fa fa-circle-o"></i> Data Supplier</a></li>
                     <li class="<?php if ($currentPage == 'customer' || $currentPage == 'add_customer' || $currentPage == 'edit_customer') echo 'active'; ?>"><a href="customer"><i class="fa fa-circle-o"></i> Data Pelanggan</a></li>
+                </ul>
+            </li>
+            <?php endif; ?>
+
+            <?php if (($chmenu3 ?? 0) >= 1 || ($_SESSION['jabatan'] ?? '') == 'admin'): ?>
+            <li class="treeview <?php if (in_array($currentPage, $atributPages)) echo 'active menu-open'; ?>">
+                <a href="#"><i class="fa fa-tags"></i> <span>Atribut Barang</span> <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
+                <ul class="treeview-menu">
+                    <li class="<?php if ($currentPage == 'kategori' || $currentPage == 'add_kategori' || $currentPage == 'edit_kategori' ) echo 'active'; ?>"><a href="kategori"><i class="fa fa-circle-o"></i> Kategori</a></li>
+                    <li class="<?php if ($currentPage == 'merek' || $currentPage == 'add_merek' || $currentPage == 'edit_merek') echo 'active'; ?>"><a href="merek"><i class="fa fa-circle-o"></i> Merk</a></li>
+                    <li class="<?php if ($currentPage == 'satuan' || $currentPage == 'add_satuan' || $currentPage == 'edit_satuan') echo 'active'; ?>"><a href="satuan"><i class="fa fa-circle-o"></i> Satuan</a></li>
                 </ul>
             </li>
             <?php endif; ?>
