@@ -6,7 +6,7 @@ etc();session();connect();
 ?>
 <html>
 <head>
-<title></title>
+<title>INV OME</title>
 
 
 <style type="text/css">
@@ -101,7 +101,7 @@ $nota=$_GET['nota'];
           <tr>
             <th width="596" align="center"><h3><?php echo $nama;?></h3></th>
 
-            <th width="200" rowspan="2" scope="col"><img src="<?php echo $avatar;?>" width="180" height="80"></th>
+            <th width="200" rowspan="2" scope="col"><img src="<?php echo $avatar;?>" width="100" height="100"></th>
             </tr>
       <tr>
         <th width="596" align="center"><h1>PENYESUAIAN STOK</h1></th>
@@ -116,7 +116,7 @@ $nota=$_GET['nota'];
   <table width="100%" border="0">
   <tbody>
     <tr>
-      <th width="160" align="left">Petugas</th>
+      <th width="160" align="left">Nama</th>
       <th width="2" scope="col">:</th>
     <th width="300" align="left"><?php echo $oleh;?></th>
 
@@ -173,21 +173,10 @@ $nota=$_GET['nota'];
          <td align="center"><?php echo mysqli_real_escape_string($conn, $fill['selisih']); ?></td>
           <td align="center"><?php echo mysqli_real_escape_string($conn, $fill['catatan']); ?></td>
     </tr>
- <?php
-            ;
-          }
-
-           ?>
-
-
-
-
+ <?php ;} ?>
           </tbody>
         </table>
    <br>
-
-
- <script>
-
-          setTimeout(function(){window.print()}, 1000);
-           </script>
+<script>
+  setTimeout(function(){window.print()}, 1000);
+</script>

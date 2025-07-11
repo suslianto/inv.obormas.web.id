@@ -90,7 +90,7 @@ td{
           <tr>
             <th width="596" align="center"><h3><?php echo $nama;?></h3></th>
 
-            <th width="200" rowspan="2" scope="col"><img src="<?php echo $avatar;?>" width="180" height="80"></th>
+            <th width="200" rowspan="2" scope="col"><img src="<?php echo $avatar;?>" width="100" height="100"></th>
             </tr>
       <tr>
         <th width="596" align="center"><h1>LAPORAN STOK</h1></th>
