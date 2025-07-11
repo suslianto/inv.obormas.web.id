@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Manajemen Barang</title>
+    <title>Barang | INV OME</title>
     <!-- Tambahkan pustaka SweetAlert -->
     <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 </head>
@@ -62,20 +62,20 @@ if (!login_check()) {
                     <!-- KONTEN BODY AWAL -->
                     <div class="box">
                         <div class="box-header">
-                            <h3 class="box-title"><i class="glyphicon glyphicon-th"></i> <?php echo $dataapa; ?></h3>
+                            <h3 class="box-title">Daftar</i> <?php echo $dataapa; ?></h3>
                         </div>
                         <div class="box-body">
                             <p>
                                 <a href="add_barang" class='btn btn-success btn-sm'><i class='fa fa-plus'></i> Tambah</a>
-                                <a href="<?php echo ($mode >= 1) ? 'impor_mode' : 'impor'; ?>" class="btn btn-primary btn-sm"><i class='fa fa-upload'></i> Import Data</a>
+                                <!-- <a href="<?php echo ($mode >= 1) ? 'impor_mode' : 'impor'; ?>" class="btn btn-primary btn-sm"><i class='fa fa-upload'></i> Import Data</a> -->
                                 <a href="barang" class="btn btn-default btn-sm"><i class='fa fa-refresh'></i> Refresh</a>
                                 <a href="barang?limit=true" class="btn btn-warning btn-sm"><i class='fa fa-line-chart'></i> Stok Limit</a>
-                                <a href="barang?exp=true" class="btn btn-danger btn-sm"><i class='fa fa-calendar-times-o'></i> Expired</a>
+                                <!-- <a href="barang?exp=true" class="btn btn-danger btn-sm"><i class='fa fa-calendar-times-o'></i> Expired</a> -->
                             </p>
                             <table class="table table-bordered table-hover" id="example2">
                                 <thead>
                                     <tr>
-                                        <th style="width:70px">Action</th>
+                                        <th>ID</th>
                                         <th>SKU</th>
                                         <th style="width:200px">Nama Barang</th>
                                         <?php if($mode>=1){?>
@@ -89,10 +89,10 @@ if (!login_check()) {
                                         <th>Kategori</th>
                                         <th>Lokasi</th>
                                         <th>Warna</th>
-                                        <th>Ukuran</th>
+                                        <!-- <th>Ukuran</th> -->
                                         <th>Merek</th>
-                                        <th>Expired</th>
-                                        <th>ID</th>
+                                        <!-- <th>Expired</th> -->
+                                        <th style="width:70px">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -108,19 +108,7 @@ if (!login_check()) {
                                 while($fill = mysqli_fetch_assoc($sql)) {
                                 ?>
                                     <tr>
-                                        <td>
-                                            <?php if ($chmod >= 3 || $_SESSION['jabatan'] == 'admin') { ?>
-                                                <button type="button" class="btn btn-success btn-xs" onclick="window.location.href='add_<?php echo $halaman;?>?q=<?php echo $fill['no']; ?>'"><i class='fa fa-edit'></i></button>
-                                            <?php } ?>
-                                            <?php if ($chmod >= 4 || $_SESSION['jabatan'] == 'admin') { 
-                                                $delete_url = "component/delete/delete_master.php?no=" . $fill['no'] . "&forward=" . $forward . "&forwardpage=" . $forwardpage . "&chmod=" . $chmod;
-                                            ?>
-                                                <button type="button" class="btn btn-danger btn-xs" onclick="confirmDelete('<?php echo $delete_url; ?>')"><i class='fa fa-trash'></i></button>
-                                            <?php } ?>
-                                            <?php if ($chmod >= 4 || $_SESSION['jabatan'] == 'admin') { ?>
-                                                <button type="button" class="btn btn-info btn-xs" onclick="window.location.href='barang_detail?no=<?php echo $fill['no']?>'"><i class='fa fa-eye'></i></button>
-                                            <?php } ?>
-                                        </td>
+                                        <td><?php echo $fill['kode']; ?></td>
                                         <td><?php echo $fill['sku']; ?></td>
                                         <td><?php echo $fill['nama']; ?></td>
                                         <?php if($mode>=1){ ?>
@@ -134,10 +122,22 @@ if (!login_check()) {
                                         <td><?php echo $fill['kategori']; ?></td>
                                         <td><?php echo $fill['lokasi']; ?></td>
                                         <td><?php echo $fill['warna']; ?></td>
-                                        <td><?php echo $fill['ukuran']; ?></td>
+                                        <!-- <td><?php echo $fill['ukuran']; ?></td> -->
                                         <td><?php echo $fill['brand']; ?></td>
-                                        <td><?php echo ($fill['expired'] != '0000-00-00') ? $fill['expired'] : ''; ?></td>
-                                        <td><?php echo $fill['kode']; ?></td>
+                                        <!-- <td><?php echo ($fill['expired'] != '0000-00-00') ? $fill['expired'] : ''; ?></td> -->
+                                        <td>
+                                            <?php if ($chmod >= 3 || $_SESSION['jabatan'] == 'admin') { ?>
+                                                <button type="button" class="btn btn-success btn-xs" onclick="window.location.href='add_<?php echo $halaman;?>?q=<?php echo $fill['no']; ?>'"><i class='fa fa-edit'></i></button>
+                                            <?php } ?>
+                                            <?php if ($chmod >= 4 || $_SESSION['jabatan'] == 'admin') { 
+                                                $delete_url = "component/delete/delete_master.php?no=" . $fill['no'] . "&forward=" . $forward . "&forwardpage=" . $forwardpage . "&chmod=" . $chmod;
+                                            ?>
+                                                <button type="button" class="btn btn-danger btn-xs" onclick="confirmDelete('<?php echo $delete_url; ?>')"><i class='fa fa-trash'></i></button>
+                                            <?php } ?>
+                                            <?php if ($chmod >= 4 || $_SESSION['jabatan'] == 'admin') { ?>
+                                                <button type="button" class="btn btn-info btn-xs" onclick="window.location.href='barang_detail?no=<?php echo $fill['no']?>'"><i class='fa fa-eye'></i></button>
+                                            <?php } ?>
+                                        </td>
                                     </tr>
                                 <?php } ?>
                                 </tbody>
