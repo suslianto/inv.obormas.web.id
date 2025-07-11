@@ -2,50 +2,47 @@
 include "../../configuration/config_connect.php";
 include "../../configuration/config_session.php";
 include "../../configuration/config_chmod.php";
-include "../../configuration/config_etc.php";
-$forward =$_GET['forward'];
-$no = $_GET['no'];
-$chmod = $_GET['chmod'];
-$forwardpage = $_GET['forwardpage'];
-?>
 
-<?php
-if( $chmod == '4' || $chmod == '5' || $_SESSION['jabatan'] =='admin' || $_SESSION['jabatan'] == 'guru'){
-
- $sql = "delete from $forward where no='".$no."'";
- if (mysqli_query($conn, $sql)) {
- ?>
-
-  <body onload="setTimeout(function() { document.frm1.submit() }, 10)">
-  <form action="<?php echo $baseurl; ?>/<?php echo $forwardpage;?>" name="frm1" method="post">
-
-  <input type="hidden" name="hapusberhasil" value="1" />
-
-<?php
- } else{
- ?>   <body onload="setTimeout(function() { document.frm1.submit() }, 10)">
-	  <input type="hidden" name="hapusberhasil" value="2" />
- <?php
- }
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
 }
-else{
 
- ?>
-  <body onload="setTimeout(function() { document.frm1.submit() }, 10)">
-   <form action="<?php echo $baseurl; ?>/<?php echo $forwardpage;?>" name="frm1" method="post">
+// Ambil data dari URL dengan aman
+$no          = isset($_GET['no']) ? (int)$_GET['no'] : 0;
+$forward     = isset($_GET['forward']) ? mysqli_real_escape_string($conn, $_GET['forward']) : '';
+$forwardpage = isset($_GET['forwardpage']) ? $_GET['forwardpage'] . '.php' : 'index.php'; // Tambahkan .php
+$chmod       = isset($_GET['chmod']) ? (int)$_GET['chmod'] : 0;
 
+// Validasi dasar
+if (empty($no) || empty($forward)) {
+    $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Parameter tidak lengkap.'];
+    header("Location: ../../" . $forwardpage);
+    exit();
+}
 
-	  <input type="hidden" name="hapusberhasil" value="2" />
- <?php
- }
+// Cek hak akses
+if ($chmod >= 4 || $_SESSION['jabatan'] == 'admin') {
+    
+    // Query untuk menghapus data
+    $sql = "DELETE FROM $forward WHERE no=$no";
+
+    if (mysqli_query($conn, $sql)) {
+        // Jika berhasil
+        $_SESSION['flash_message'] = ['type' => 'success', 'message' => 'Data telah berhasil dihapus.'];
+    } else {
+        // Jika gagal, kemungkinan karena data digunakan di tabel lain (foreign key constraint)
+        if(mysqli_errno($conn) == 1451){
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Gagal menghapus! Data ini sedang digunakan di transaksi lain.'];
+        } else {
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Terjadi kesalahan: ' . mysqli_error($conn)];
+        }
+    }
+} else {
+    // Jika tidak punya hak akses
+    $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Akses ditolak! Anda tidak memiliki izin untuk menghapus data.'];
+}
+
+// Arahkan kembali ke halaman daftar
+header("Location: ../../" . $forwardpage);
+exit();
 ?>
-<table width="100%" align="center" cellspacing="0">
-  <tr>
-    <td height="500px" align="center" valign="middle"><img src="../../dist/img/load.gif">
-  </tr>
-</table>
-
-
-   </form>
-<meta http-equiv="refresh" content="10;url=jump?forward=<?php echo $forward.'&';?>forwardpage=<?php echo $forwardpage.'&'; ?>chmod=<?php echo $chmod; ?>">
-</body>

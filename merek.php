@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html>
 <?php
 include "configuration/config_etc.php";
 include "configuration/config_include.php";
@@ -9,55 +11,14 @@ if (!login_check()) {
     exit(0);
 }
 ?>
-<!DOCTYPE html>
-<html>
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Manajemen Merek</title>
     <!-- Tambahkan pustaka SweetAlert -->
     <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
-    <style>
-        /* CSS untuk membuat header box tetap (sticky) */
-        .sticky-header {
-            position: -webkit-sticky; /* Untuk Safari */
-            position: sticky;
-            top: 0; /* Tetap di bagian atas */
-            z-index: 1020; /* Pastikan di atas elemen lain saat scroll */
-            background-color: #ffffff; /* Warna latar belakang agar konten di bawahnya tidak tembus */
-        }
-    </style>
 </head>
 <body class="hold-transition skin-purple sidebar-mini">
-
-<?php
-// Tampilkan notifikasi SweetAlert berdasarkan status dari URL
-if (isset($_GET['status'])) {
-    $status = $_GET['status'];
-    $dataapa_uc = "Merek";
-    echo '<script>';
-    // Pastikan DOM sudah siap sebelum menampilkan swal
-    echo 'document.addEventListener("DOMContentLoaded", function() {';
-    switch ($status) {
-        case 'delete_success':
-            echo "swal('Berhasil!', '$dataapa_uc telah berhasil dihapus.', 'success');";
-            break;
-        case 'delete_fail_permission':
-            echo "swal('Gagal!', 'Hanya user tertentu yang dapat menghapus data $dataapa_uc.', 'error');";
-            break;
-        case 'delete_fail_transaction':
-            echo "swal('Gagal!', '$dataapa_uc tidak bisa dihapus karena sudah digunakan dalam transaksi.', 'error');";
-            break;
-    }
-    // Hapus parameter status dari URL agar notifikasi tidak muncul lagi saat refresh
-    echo "if (typeof window.history.pushState == 'function') {";
-    echo "var newUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;";
-    echo "window.history.pushState({ path: newUrl }, '', newUrl);";
-    echo "}";
-    echo '});';
-    echo '</script>';
-}
-?>
 
 <div class="wrapper">
     <?php
@@ -82,34 +43,23 @@ if (isset($_GET['status'])) {
                     $search = isset($_POST['search']) ? $_POST['search'] : '';
                     ?>
                     <!-- SETTING STOP -->
-                    
-                    <!-- Tambahkan class "sticky-header" untuk membuat elemen ini tetap -->
-                    <div class="sticky-header">
-                        <!-- BREADCRUMB -->
-                        <ol class="breadcrumb" style="margin-bottom: 5px;">
-                            <li><a href="<?php echo $_SESSION['baseurl']; ?>">Dashboard </a></li>
-                            <li><a href="<?php echo $halaman; ?>"><?php echo $dataapa ?></a></li>
-                            <li class="active"><?php echo !empty($search) ? "Hasil untuk: " . $search : "Data " . $dataapa; ?></li>
-                        </ol>
-                    </div>
 
+                    <!-- BREADCRUMB -->
+                    <ol class="breadcrumb">
+                        <li><a href="<?php echo $_SESSION['baseurl']; ?>">Dashboard </a></li>
+                        <li><a href="<?php echo $halaman; ?>.php"><?php echo $dataapa ?></a></li>
+                        <li class="active"><?php echo !empty($search) ? "Hasil untuk: " . htmlspecialchars($search) : "Data " . $dataapa; ?></li>
+                    </ol>
 
                     <?php if ($chmod >= 1 || $_SESSION['jabatan'] == 'admin') : ?>
-                        <?php
-                        $sqla = "SELECT COUNT(*) AS totaldata FROM $forward";
-                        $hasila = mysqli_query($conn, $sqla);
-                        $rowa = mysqli_fetch_assoc($hasila);
-                        $totaldata = $rowa['totaldata'];
-                        ?>
                         <div class="box">
-                            <!-- Tambahkan class "sticky-header" untuk membuat elemen ini tetap -->
-                            <div class="box-header with-border sticky-header">
-                                <h3 class="box-title" style="vertical-align: middle; display: inline-block; margin-right: 10px;">Data <?php echo $dataapa; ?> <span class="label label-default"><?php echo $totaldata; ?></span></h3>
-                                <a href="add_merek" class="btn btn-info btn-sm" style="vertical-align: middle;">Tambah</a>
+                            <div class="box-header with-border">
+                                <h3 class="box-title" style="vertical-align: middle; margin-right: 10px;"><?php echo $dataapa; ?></h3>
+                                <a href="add_merek" class="btn btn-info btn-sm" style="vertical-align: middle;"><i class="fa fa-plus"></i> Tambah</a>
                                 <div class="box-tools pull-right">
                                     <form method="post" action="">
                                         <div class="input-group input-group-sm" style="width: 250px;">
-                                            <input type="text" name="search" class="form-control" placeholder="Cari...">
+                                            <input type="text" name="search" class="form-control" placeholder="Cari..." value="<?php echo htmlspecialchars($search); ?>">
                                             <div class="input-group-btn">
                                                 <button type="submit" class="btn btn-default"><i class="fa fa-search"></i></button>
                                             </div>
@@ -118,7 +68,30 @@ if (isset($_GET['status'])) {
                                 </div>
                             </div>
                             <div class="box-body table-responsive">
-                                <table class="table table-hover">
+                                <?php
+                                $rpp = 15;
+                                $reload = "$halaman.php?pagination=true";
+                                $page = intval(isset($_GET["page"]) ? $_GET["page"] : 1);
+                                if ($page <= 0) $page = 1;
+
+                                $sql_where = "";
+                                if (!empty($search)) {
+                                    $sql_where = " WHERE kode LIKE '%$search%' OR nama LIKE '%$search%'";
+                                }
+                                
+                                $sql_count = "SELECT COUNT(*) AS totaldata FROM $tabeldatabase" . $sql_where;
+                                $result_count = mysqli_query($conn, $sql_count);
+                                $row_count = mysqli_fetch_assoc($result_count);
+                                $tcount = $row_count['totaldata'];
+                                
+                                $tpages = ($tcount) ? ceil($tcount / $rpp) : 1;
+                                $i = ($page - 1) * $rpp;
+                                $no_urut = ($page - 1) * $rpp;
+
+                                $sql_data = "SELECT * FROM $tabeldatabase" . $sql_where . " ORDER BY no DESC LIMIT $i, $rpp";
+                                $result = mysqli_query($conn, $sql_data);
+                                ?>
+                                <table class="table table-hover table-bordered">
                                     <thead>
                                         <tr>
                                             <th>No</th>
@@ -130,49 +103,31 @@ if (isset($_GET['status'])) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php
-                                        $rpp = 15;
-                                        $reload = "$halaman?pagination=true";
-                                        $page = intval(isset($_GET["page"]) ? $_GET["page"] : 0);
-                                        if ($page <= 0) $page = 1;
-
-                                        $sql_select = "SELECT * FROM $forward";
-                                        if (!empty($search)) {
-                                            $sql_select .= " WHERE kode LIKE '%$search%' OR nama LIKE '%$search%'";
+                                    <?php
+                                    if (mysqli_num_rows($result) > 0) {
+                                        while ($fill = mysqli_fetch_assoc($result)) {
+                                    ?>
+                                        <tr>
+                                            <td><?php echo ++$no_urut; ?></td>
+                                            <td><?php echo htmlspecialchars($fill['kode']); ?></td>
+                                            <td><?php echo htmlspecialchars($fill['nama']); ?></td>
+                                            <?php if ($chmod >= 3 || $_SESSION['jabatan'] == 'admin') { ?>
+                                                <td>
+                                                    <button type="button" class="btn btn-success btn-xs" onclick="window.location.href='add_<?php echo $halaman; ?>.php?no=<?php echo $fill['no']; ?>'"><i class="fa fa-pencil"></i></button>
+                                                    <?php if ($chmod >= 4 || $_SESSION['jabatan'] == 'admin') {
+                                                        $delete_url = "component/delete/delete_master.php?no=" . $fill['no'] . "&forward=" . $forward . "&forwardpage=" . $forwardpage . "&chmod=" . $chmod;
+                                                    ?>
+                                                        <button type="button" class="btn btn-danger btn-xs" onclick="confirmDelete('<?php echo $delete_url; ?>')"><i class="fa fa-trash"></i></button>
+                                                    <?php } ?>
+                                                </td>
+                                            <?php } ?>
+                                        </tr>
+                                    <?php
                                         }
-                                        $sql_select .= " ORDER BY no";
-
-                                        $result = mysqli_query($conn, $sql_select);
-                                        $tcount = mysqli_num_rows($result);
-                                        $tpages = ($tcount) ? ceil($tcount / $rpp) : 1;
-                                        $count = 0;
-                                        $i = ($page - 1) * $rpp;
-                                        $no_urut = ($page - 1) * $rpp;
-
-                                        while (($count < $rpp) && ($i < $tcount)) {
-                                            mysqli_data_seek($result, $i);
-                                            $fill = mysqli_fetch_array($result);
-                                        ?>
-                                            <tr>
-                                                <td><?php echo ++$no_urut; ?></td>
-                                                <td><?php echo htmlspecialchars($fill['kode']); ?></td>
-                                                <td><?php echo htmlspecialchars($fill['nama']); ?></td>
-                                                <?php if ($chmod >= 3 || $_SESSION['jabatan'] == 'admin') { ?>
-                                                    <td>
-                                                        <button type="button" class="btn btn-success btn-xs" onclick="window.location.href='add_<?php echo $halaman; ?>?no=<?php echo $fill['no']; ?>'">Edit</button>
-                                                        <?php if ($chmod >= 4 || $_SESSION['jabatan'] == 'admin') {
-                                                            $delete_url = "component/delete/delete_master.php?no=" . $fill['no'] . "&forward=" . $forward . "&forwardpage=" . $forwardpage . "&chmod=" . $chmod;
-                                                        ?>
-                                                            <button type="button" class="btn btn-danger btn-xs" onclick="confirmDelete('<?php echo $delete_url; ?>')">Hapus</button>
-                                                        <?php } ?>
-                                                    </td>
-                                                <?php } ?>
-                                            </tr>
-                                        <?php
-                                            $i++;
-                                            $count++;
-                                        }
-                                        ?>
+                                    } else {
+                                        echo "<tr><td colspan='4' class='text-center'>Tidak ada data ditemukan.</td></tr>";
+                                    }
+                                    ?>
                                     </tbody>
                                 </table>
                             </div>
@@ -218,6 +173,39 @@ if (isset($_GET['status'])) {
             }
         });
     }
+
+    // Tampilkan notifikasi dari session atau URL
+    document.addEventListener("DOMContentLoaded", function() {
+        <?php
+        if (isset($_SESSION['flash_message'])) {
+            $flash = $_SESSION['flash_message'];
+            $type = $flash['type'];
+            $message = addslashes($flash['message']);
+            $title = ($type == 'success') ? 'Berhasil!' : 'Gagal!';
+            echo "swal('$title', '$message', '$type');";
+            unset($_SESSION['flash_message']);
+        } elseif (isset($_GET['status'])) {
+            $status = $_GET['status'];
+            $dataapa_uc = "Merek";
+            $title = ''; $message = ''; $type = '';
+            switch ($status) {
+                case 'delete_success':
+                    $title = 'Berhasil!'; $message = "$dataapa_uc telah berhasil dihapus."; $type = 'success';
+                    break;
+                case 'delete_fail_permission':
+                    $title = 'Gagal!'; $message = "Hanya user tertentu yang dapat menghapus data $dataapa_uc."; $type = 'error';
+                    break;
+                case 'delete_fail_transaction':
+                    $title = 'Gagal!'; $message = "$dataapa_uc tidak bisa dihapus karena sudah digunakan dalam transaksi."; $type = 'error';
+                    break;
+            }
+            if ($title) {
+                echo "swal('$title', '$message', '$type');";
+                echo "if (typeof window.history.pushState == 'function') { var newUrl = window.location.protocol + '//' + window.location.host + window.location.pathname; window.history.pushState({ path: newUrl }, '', newUrl); }";
+            }
+        }
+        ?>
+    });
 </script>
 </body>
 </html>
