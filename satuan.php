@@ -55,7 +55,7 @@ if (!login_check()) {
                         <div class="box">
                             <div class="box-header with-border">
                                 <h3 class="box-title" style="vertical-align: middle; margin-right: 10px;"><?php echo $dataapa; ?></h3>
-                                <a href="add_satuan" class="btn btn-info btn-sm" style="vertical-align: middle;"><i class="fa fa-plus"></i> Tambah</a>
+                                <a href="add_satuan" class="btn bg-blue btn-sm" style="vertical-align: middle;"><i class="fa fa-plus"></i> Tambah</a>
                                 <div class="box-tools pull-right">
                                     <form method="post" action="">
                                         <div class="input-group input-group-sm" style="width: 250px;">
