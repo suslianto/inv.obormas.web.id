@@ -33,4 +33,4 @@ if($responsive == '1'){
 }
 		?>
 
-<body class="hold-transition <?php echo $themese; ?><?php echo ' '.$responsiven; ?> sidebar-mini"> 
+<body class="hold-transition <?php echo $themese; ?><?php echo ' '.$responsiven; ?> sidebar-mini fixed"> 
