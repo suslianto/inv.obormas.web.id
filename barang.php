@@ -66,7 +66,7 @@ if (!login_check()) {
                         </div>
                         <div class="box-body">
                             <p>
-                                <a href="add_barang" class='btn btn-success btn-sm'><i class='fa fa-plus'></i> Tambah</a>
+                                <a href="add_barang" class="btn bg-blue btn-sm" style="vertical-align: middle;"><i class="fa fa-plus"></i> Tambah</a>
                                 <!-- <a href="<?php echo ($mode >= 1) ? 'impor_mode' : 'impor'; ?>" class="btn btn-primary btn-sm"><i class='fa fa-upload'></i> Import Data</a> -->
                                 <a href="barang" class="btn btn-default btn-sm"><i class='fa fa-refresh'></i> Refresh</a>
                                 <a href="barang?limit=true" class="btn btn-warning btn-sm"><i class='fa fa-line-chart'></i> Stok Limit</a>
@@ -85,12 +85,12 @@ if (!login_check()) {
                                         <?php if(isset($_GET['limit'])){?>
                                         <th>Minimal</th>
                                         <?php } ?>
-                                        <th>Satuan</th>
                                         <th>Kategori</th>
                                         <th>Lokasi</th>
+                                        <th>Merek</th>
+                                        <th>Satuan</th>
                                         <th>Warna</th>
                                         <!-- <th>Ukuran</th> -->
-                                        <th>Merek</th>
                                         <!-- <th>Expired</th> -->
                                         <th style="width:70px">Action</th>
                                     </tr>
@@ -118,12 +118,12 @@ if (!login_check()) {
                                         <?php if(isset($_GET['limit'])){ ?>
                                         <td><?php echo number_format($fill['stokmin']); ?></td>
                                         <?php } ?>
-                                        <td><?php echo $fill['satuan']; ?></td>
                                         <td><?php echo $fill['kategori']; ?></td>
                                         <td><?php echo $fill['lokasi']; ?></td>
+                                        <td><?php echo $fill['brand']; ?></td>
+                                        <td><?php echo $fill['satuan']; ?></td>
                                         <td><?php echo $fill['warna']; ?></td>
                                         <!-- <td><?php echo $fill['ukuran']; ?></td> -->
-                                        <td><?php echo $fill['brand']; ?></td>
                                         <!-- <td><?php echo ($fill['expired'] != '0000-00-00') ? $fill['expired'] : ''; ?></td> -->
                                         <td>
                                             <?php if ($chmod >= 3 || $_SESSION['jabatan'] == 'admin') { ?>

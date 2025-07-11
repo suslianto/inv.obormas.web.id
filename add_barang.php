@@ -181,16 +181,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['savebarang'])) {
                                                 <div class="row">
                                                     <div class="col-md-6">
                                                         <div class="form-group">
-                                                            <label>SKU Barang</label>
-                                                            <?php if (!empty($id)) : ?>
-                                                                <input class="form-control" type="hidden" name="kode" value="<?php echo $w['kode']; ?>">
-                                                                <input class="form-control" type="text" name="sku" value="<?php echo $w['sku']; ?>" required>
-                                                            <?php else : ?>
-                                                                <input class="form-control" type="hidden" name="kode" value="<?php echo autoNumber(); ?>">
-                                                                <input class="form-control" type="text" name="sku" value="SKU<?php echo autoNumber(); ?>" required>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                        <div class="form-group">
                                                             <label>Nama Barang</label>
                                                             <input class="form-control" name="nama" maxlength="200" autocomplete="off" value="<?php echo isset($w['nama']) ? htmlspecialchars($w['nama']) : ''; ?>" required>
                                                         </div>
@@ -210,21 +200,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['savebarang'])) {
                                                             </div>
                                                         </div>
                                                         <div class="form-group">
-                                                            <label>Satuan</label>
-                                                            <div class="input-group">
-                                                                <select class="form-control select2" name="satuan" required>
-                                                                    <?php
-                                                                    $sql_satuan = mysqli_query($conn, "select * from satuan");
-                                                                    while ($row = mysqli_fetch_assoc($sql_satuan)) {
-                                                                        $selected = (isset($w['satuan']) && $w['satuan'] == $row['nama']) ? "selected" : "";
-                                                                        echo "<option value='" . $row['nama'] . "' " . $selected . ">" . $row['nama'] . "</option>";
-                                                                    }
-                                                                    ?>
-                                                                </select>
-                                                                <span class="input-group-btn"><a class="btn btn-default" href="add_satuan"><i class="fa fa-plus"></i></a></span>
-                                                            </div>
-                                                        </div>
-                                                        <div class="form-group">
                                                             <label>Merek</label>
                                                             <div class="input-group">
                                                                 <select class="form-control select2" name="merek" required>
@@ -239,8 +214,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['savebarang'])) {
                                                                 <span class="input-group-btn"><a class="btn btn-default" href="add_merek"><i class="fa fa-plus"></i></a></span>
                                                             </div>
                                                         </div>
+                                                        <div class="form-group">
+                                                            <label>Satuan</label>
+                                                            <div class="input-group">
+                                                                <select class="form-control select2" name="satuan" required>
+                                                                    <?php
+                                                                    $sql_satuan = mysqli_query($conn, "select * from satuan");
+                                                                    while ($row = mysqli_fetch_assoc($sql_satuan)) {
+                                                                        $selected = (isset($w['satuan']) && $w['satuan'] == $row['nama']) ? "selected" : "";
+                                                                        echo "<option value='" . $row['nama'] . "' " . $selected . ">" . $row['nama'] . "</option>";
+                                                                    }
+                                                                    ?>
+                                                                </select>
+                                                                <span class="input-group-btn"><a class="btn btn-default" href="add_satuan"><i class="fa fa-plus"></i></a></span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                     <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label>SKU Barang</label>
+                                                            <?php if (!empty($id)) : ?>
+                                                                <input class="form-control" type="hidden" name="kode" value="<?php echo $w['kode']; ?>">
+                                                                <input class="form-control" type="text" name="sku" value="<?php echo $w['sku']; ?>" required>
+                                                            <?php else : ?>
+                                                                <input class="form-control" type="hidden" name="kode" value="<?php echo autoNumber(); ?>">
+                                                                <input class="form-control" type="text" name="sku" value="SKU<?php echo autoNumber(); ?>" required>
+                                                            <?php endif; ?>
+                                                        </div>
                                                         <?php if (!empty($id)) : ?>
                                                             <div class="form-group">
                                                                 <label>Stok Minimal</label>
@@ -252,6 +252,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['savebarang'])) {
                                                             </div>
                                                         <?php else : ?>
                                                             <div class="form-group">
+                                                                <label>Barcode</label>
+                                                                <input class="form-control" name="barcode" value="OME<?php echo autoNumber(); ?>" required>
+                                                            </div>
+                                                            <div class="form-group">
                                                                 <label>Stok Awal</label>
                                                                 <input class="form-control" name="stok" type="number" min="0" required value="1" >
                                                             </div>
@@ -259,10 +263,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['savebarang'])) {
                                                                 <label>Stok Minimal</label>
                                                                 <input class="form-control" name="stok_minimal" type="number" min="1" value="1" required>
                                                             </div>
-                                                            <div class="form-group">
-                                                                <label>Barcode</label>
-                                                                <input class="form-control" name="barcode" value="OME<?php echo autoNumber(); ?>" required>
-                                                            </div>
+
                                                         <?php endif; ?>
                                                         <?php if ($mode >= 1) : ?>
                                                             <div class="form-group">
@@ -299,10 +300,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['savebarang'])) {
                                                         </div>
                                                     </div>
                                                     <div class="col-lg-6">
-                                                        <div class="form-group">
+                                                        <!-- <div class="form-group">
                                                             <label>Tanggal Kedaluwarsa</label>
                                                             <input id="datepicker" class="form-control" data-language="en" name="expired" autocomplete="off" value="<?php echo isset($w['expired']) ? $w['expired'] : ''; ?>">
-                                                        </div>
+                                                        </div> -->
                                                         <div class="form-group">
                                                             <label>Keterangan</label>
                                                             <input class="form-control" name="keterangan" autocomplete="off" value="<?php echo isset($w['keterangan']) ? htmlspecialchars($w['keterangan']) : ''; ?>">
@@ -314,14 +315,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['savebarang'])) {
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div class="box-footer">
+                                                <button class="btn btn-primary" type="submit" name="savebarang"><i class="fa fa-check-square-o"></i> Simpan</button>
+                                                <a class="btn btn-warning" href="add_barang"><i class="fa fa-retweet"></i> Reset</a>
+                                                <a class="btn btn-danger" href="barang"><i class="fa fa-window-close"></i> Batal</a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="box-footer">
-                                    <button class="btn btn-primary" type="submit" name="savebarang"><i class="fa fa-check-square-o"></i> Simpan</button>
-                                    <a class="btn btn-warning" href="add_barang"><i class="fa fa-retweet"></i> Reset</a>
-                                    <a class="btn btn-danger" href="barang"><i class="fa fa-window-close"></i> Batal</a>
-                                </div>
+
                             </form>
                         </div>
                     </div>
