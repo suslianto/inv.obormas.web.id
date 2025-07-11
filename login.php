@@ -37,7 +37,7 @@ $background_image = $row_bg['loginbg'] ?? 'path/to/default/image.jpg'; // Defaul
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo htmlspecialchars($footer_title); ?></title>
+    <title>Login | INV OME</title>
 
     <link rel="icon" type="image/png" href="page/images/icons/favicon.ico"/>
     <link rel="stylesheet" type="text/css" href="page/vendor/bootstrap/css/bootstrap.min.css">

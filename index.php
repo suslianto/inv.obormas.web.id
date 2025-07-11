@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+  <title>Dashboard | INV OME</title>
 <?php
 include "configuration/config_include.php";
 include "configuration/config_alltotal.php";

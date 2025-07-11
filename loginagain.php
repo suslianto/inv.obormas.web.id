@@ -37,7 +37,7 @@ $background_image = $row_bg['loginbg'] ?? 'path/to/default/image.jpg'; // Defaul
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo htmlspecialchars($footer_title); ?></title>
+    <title>Login | INV OME</title>
 
     <link rel="icon" type="image/png" href="page/images/icons/favicon.ico"/>
     <link rel="stylesheet" type="text/css" href="page/vendor/bootstrap/css/bootstrap.min.css">
@@ -75,8 +75,13 @@ $background_image = $row_bg['loginbg'] ?? 'path/to/default/image.jpg'; // Defaul
                         Sign In
                     </button>
                 </div>
-
-                <div class="text-center p-t-50">
+                <div class="text-nowrap" style="width: 8rem;">
+                    <strong >
+                        &nbsp;&nbsp;&nbsp;
+                    </strong>
+                </div>
+                    <h6 style="color:red; text-align:center;">Username atau Password Salah!</h6>
+                <div class="text-center p-t-25">
                      <p class="login-box-msg">Copyright © 2025 OME</p>
                 </div>
             </form>

@@ -4,7 +4,7 @@ error_reporting(E_ALL ^ E_DEPRECATED);
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname="omecoid_inventory";
+$dbname="inv_inventory";
 
       $koneksi = mysqli_connect('localhost', 'root', '');
         $db = mysqli_select_db($koneksi ,$dbname);
