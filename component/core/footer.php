@@ -16,7 +16,6 @@ include 'configuration/config_connect.php';
  ?>
  <footer class="main-footer">
                 <div class="pull-right hidden-xs">
-                    <b>Version</b> <?php echo $nama;?>
                 </div>
                 <strong>Copyright © 2025 OME.</strong> All rights
                 reserved. <?php echo $footer;?>
