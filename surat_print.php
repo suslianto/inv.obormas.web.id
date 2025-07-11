@@ -202,7 +202,7 @@ $nota=$_GET['nota'];
     <tr>
     <th width="201" scope="col">Dibuat</th>
     <th width="202" scope="col">Diketahui</th>
-    <th width="218" scope="col">Dikirim (<?php echo $nopol;?>)</th>
+    <th width="218" scope="col">Dikirim (<?php echo $driver;?>)</th>
     <th width="208" scope="col">Penerima</th>
   </tr>
   <tr>
@@ -212,9 +212,9 @@ $nota=$_GET['nota'];
     <td>&nbsp;</td>
   </tr>
   <tr>
-    <th align="left">Nama : <?php echo $by;?></th>
+    <th align="left">Nama : </th>
     <th align="left">Nama :</th>
-    <th align="left">Nama : <?php echo $driver;?>/<?php echo $nodriver;?></th>
+    <th align="left">Nama : <?php echo $driver;?> <?php echo $nodriver;?></th>
     <th align="left">Nama :</th>
   </tr>
   <tr>
@@ -225,7 +225,7 @@ $nota=$_GET['nota'];
   </tr>
 </tbody>
 </table>
-<label><h5><?php echo $ket;?></h5></label><br>
+<label><h5># <?php echo $ket;?></h5></label><br>
 
 
  <script>
