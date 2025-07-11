@@ -4,717 +4,452 @@
 include "configuration/config_etc.php";
 include "configuration/config_include.php";
 etc();encryption();session();connect();head();body();timing();
-//alltotal();
 pagination();
-?>
 
-<?php
 if (!login_check()) {
-?>
-<meta http-equiv="refresh" content="0; url=logout" />
-<?php
-exit(0);
+    echo '<meta http-equiv="refresh" content="0; url=logout" />';
+    exit(0);
 }
+
+// ===================================================================
+// PENGATURAN HALAMAN
+// ===================================================================
+error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
+include "configuration/config_chmod.php";
+$halaman = "stok_out.php";
+$dataapa = "Stok Keluar";
+$tabeldatabase = "stok_keluar";
+$tabel = "stok_keluar_daftar";
+$chmod = $chmenu5;
+$kegiatan = "Stok Keluar";
+
+function autoNumber(){
+    include "configuration/config_connect.php";
+    $query = "SELECT MAX(no) as max_id FROM stok_keluar ORDER BY no";
+    $result = mysqli_query($conn, $query);
+    $data = mysqli_fetch_array($result);
+    $id_max = $data['max_id'];
+    $sort_num = (int) $id_max;
+    $sort_num++;
+    $new_code = sprintf("%04s", $sort_num);
+    return $new_code;
+}
+
+$nota_aktif = isset($_GET['nota']) ? $_GET['nota'] : autoNumber();
+
+// ===================================================================
+// PROSES TAMBAH ITEM (TANPA ALERT)
+// ===================================================================
+if(isset($_POST["keluar"])){
+    if($_SERVER["REQUEST_METHOD"] == "POST"){
+        $nota = mysqli_real_escape_string($conn, $_POST["nota"]);
+        $kode = mysqli_real_escape_string($conn, $_POST["kode"]);
+        $nama = mysqli_real_escape_string($conn, $_POST["nama"]);
+        $jumlah = (int)mysqli_real_escape_string($conn, $_POST["jumlah"]);
+        $stok = (int)mysqli_real_escape_string($conn, $_POST["stok"]);
+        $hbeli = (int)mysqli_real_escape_string($conn, $_POST["hargabeli"]);
+        $hjual = (int)mysqli_real_escape_string($conn, $_POST["hargajual"]);
+        
+        if(!empty($kode) && $jumlah > 0 && $jumlah <= $stok) {
+            $brg = mysqli_query($conn,"SELECT * FROM barang WHERE kode='$kode'");
+            $ass = mysqli_fetch_assoc($brg);
+            $oldstok = (int)$ass['sisa'];
+            $oldout = (int)$ass['terjual'];
+            $newstok = $oldstok - $jumlah;
+            $newout = $oldout + $jumlah;
+
+            $sqlx = "UPDATE barang SET sisa='$newstok', terjual='$newout' WHERE kode='$kode'";
+            if(mysqli_query($conn, $sqlx)){
+                $sql_cek = "SELECT * FROM stok_keluar_daftar WHERE nota='$nota' AND kode_barang='$kode'";
+                $resulte = mysqli_query($conn, $sql_cek);
+
+                if(mysqli_num_rows($resulte) > 0){
+                    $q = mysqli_fetch_assoc($resulte);
+                    $cart = (int)$q['jumlah'];
+                    $newcart = $cart + $jumlah;
+                    $total = $newcart * $hjual;
+                    $modal = $newcart * $hbeli;
+                    $sqlu = "UPDATE stok_keluar_daftar SET jumlah='$newcart', subbeli='$modal', subtotal='$total' WHERE nota='$nota' AND kode_barang='$kode'";
+                    mysqli_query($conn, $sqlu);
+                } else {
+                    $total = $jumlah * $hjual;
+                    $modal = $jumlah * $hbeli;
+                    $sql2 = "INSERT INTO stok_keluar_daftar (nota, kode_barang, nama, jumlah, subbeli, subtotal) VALUES ('$nota', '$kode', '$nama', '$jumlah', '$modal', '$total')";
+                    mysqli_query($conn, $sql2);
+                }
+            }
+        } else {
+             if($jumlah > $stok) {
+                $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Jumlah keluar tidak boleh lebih besar dari stok tersedia!'];
+             }
+        }
+        header("Location: $halaman?nota=$nota");
+        exit();
+    }
+}
+
+// ===================================================================
+// PROSES SIMPAN TRANSAKSI DAN BUAT SURAT JALAN
+// ===================================================================
+if(isset($_POST["simpan"])){
+    if($_SERVER["REQUEST_METHOD"] == "POST"){
+        $nota = mysqli_real_escape_string($conn, $_POST["notae"]);
+        $pelanggan_kode = mysqli_real_escape_string($conn, $_POST["pelanggan"]);
+        $driver = mysqli_real_escape_string($conn, $_POST["driver"]);
+        $nohp_driver = mysqli_real_escape_string($conn, $_POST["nohp"]);
+        $nopol = mysqli_real_escape_string($conn, $_POST["nopol"]);
+        $ket = mysqli_real_escape_string($conn, $_POST["ket"]);
+        $modal = mysqli_real_escape_string($conn, $_POST["modal"]);
+        $total = mysqli_real_escape_string($conn, $_POST["total"]);
+        $tgl = date('Y-m-d');
+        $usr = $_SESSION['nouser'];
+        $cab = '01'; 
+
+        $cek_item = mysqli_query($conn, "SELECT * FROM stok_keluar_daftar WHERE nota='$nota'");
+        if(mysqli_num_rows($cek_item) > 0) {
+            
+            $pelanggan_nama = '';
+            $pelanggan_alamat = '';
+            $pelanggan_notelp = '';
+            $sql_get_pelanggan = "SELECT nama, alamat, notelp FROM pelanggan WHERE kode = '$pelanggan_kode' LIMIT 1";
+            $res_pelanggan = mysqli_query($conn, $sql_get_pelanggan);
+            if($row_pelanggan = mysqli_fetch_assoc($res_pelanggan)){
+                $pelanggan_nama = $row_pelanggan['nama'];
+                $pelanggan_alamat = $row_pelanggan['alamat'];
+                $pelanggan_notelp = $row_pelanggan['notelp'];
+            }
+
+            $sql_stok_keluar = "INSERT INTO stok_keluar VALUES ('$nota', '$cab', '$tgl', '$pelanggan_nama', '$usr', '$ket', '$modal', '$total', '')";
+            if(mysqli_query($conn, $sql_stok_keluar)){
+                
+                $nosurat = "SJ/" . date("Ymd") . "/" . $nota;
+                
+                $sql_surat = "INSERT INTO surat VALUES ('$nota', '$nosurat', '$tgl', '$pelanggan_kode', '$pelanggan_nama', '$pelanggan_notelp', '$pelanggan_alamat', '$driver', '$nohp_driver', '$nopol', '$usr', '')";
+                
+                if(mysqli_query($conn, $sql_surat)){
+                    $mut = "UPDATE mutasi SET status='berhasil', tujuan='$pelanggan_nama' WHERE keterangan='$nota' AND kegiatan='$kegiatan'";
+                    mysqli_query($conn, $mut);
+
+                    $_SESSION['flash_message'] = ['type' => 'success', 'message' => 'Surat Jalan berhasil dibuat!'];
+                    header("Location: surat_kelola.php");
+                    exit();
+                }
+            }
+        }
+        
+        $error_msg = mysqli_error($conn);
+        $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Gagal membuat Surat Jalan! Error: ' . addslashes($error_msg)];
+        header("Location: $halaman");
+        exit();
+    }
+}
+
+// Menangkap barcode
+$barcode_val = ''; $nama_val = ''; $kode_val = ''; $stok_val = ''; $jumlah_val = '1'; $hbeli_val = ''; $hjual_val = '';
+if(isset($_GET['barcode'])) {
+    $barcode_val = mysqli_real_escape_string($conn, $_GET["barcode"]);
+    if(!empty($barcode_val)){
+        $sql1 = "SELECT * FROM barang WHERE barcode='$barcode_val'";
+        $query = mysqli_query($conn, $sql1);
+        if($data = mysqli_fetch_assoc($query)){
+            $nama_val = $data['nama'];
+            $kode_val = $data['kode'];
+            $stok_val = $data['sisa'];
+            $hbeli_val = $data['hargabeli'];
+            $hjual_val = $data['hargajual'];
+        }
+    }
+}
+
+$query_total = mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(subbeli) as beli, SUM(subtotal) as total FROM stok_keluar_daftar WHERE nota='$nota_aktif'"));
+
 ?>
-        <div class="wrapper">
+<div class="wrapper">
 <?php
 theader();
 menu();
 ?>
-            <div class="content-wrapper">
-                <section class="content-header">
-</section>
-                <!-- Main content -->
-                <section class="content">
+    <div class="content-wrapper">
+        <section class="content-header"></section>
+        <section class="content">
+            <div class="row">
+                <div class="col-lg-12">
+                    <ol class="breadcrumb ">
+                        <li><a href="<?php echo $_SESSION['baseurl']; ?>">Dashboard </a></li>
+                        <li><a href="<?php echo $halaman;?>"><?php echo $dataapa ?></a></li>
+                        <li class="active">Data <?php echo $dataapa ?></li>
+                    </ol>
+
+                    <?php if ($chmod >= 2 || $_SESSION['jabatan'] == 'admin'): ?>
                     <div class="row">
-            <div class="col-lg-12">
-                        <!-- ./col -->
-
-<!-- SETTING START-->
-
-<?php
-error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
-include "configuration/config_chmod.php";
-$halaman = "stok_out"; // halaman
-$dataapa = "Stok Keluar"; // data
-$tabeldatabase = "stok_keluar"; // tabel database
-$tabel="stok_keluar_daftar";
-$chmod = $chmenu5; // Hak akses Menu
-$forward = mysqli_real_escape_string($conn, $tabeldatabase); // tabel database
-$forwardpage = mysqli_real_escape_string($conn, $halaman); // halaman
-$search = $_POST['search'];
-$insert = $_POST['insert'];
-$kegiatan = "Stok Keluar";
-
-
- function autoNumber(){
-  include "configuration/config_connect.php";
-  global $forward;
-  $query = "SELECT MAX(no) as max_id FROM stok_keluar ORDER BY no";
-  $result = mysqli_query($conn, $query);
-  $data = mysqli_fetch_array($result);
-  $id_max = $data['max_id'];
-  $sort_num = (int) $id_max;
-  $sort_num++;
-  $new_code = sprintf("%04s", $sort_num);
- return $new_code;
- }
- 
-?>
-
-
-<!-- SETTING STOP -->
-
-
-<!-- BREADCRUMB -->
-
-<ol class="breadcrumb ">
-<li><a href="<?php echo $_SESSION['baseurl']; ?>">Dashboard </a></li>
-<li><a href="<?php echo $halaman;?>"><?php echo $dataapa ?></a></li>
-<?php
-
-if ($search != null || $search != "") {
-?>
- <li> <a href="<?php echo $halaman;?>">Data <?php echo $dataapa ?></a></li>
-  <li class="active"><?php
-    echo $search;
-?></li>
-  <?php
-} else {
-?>
- <li class="active">Data <?php echo $dataapa ?></li>
-  <?php
-}
-?>
-</ol>
-
-<!-- BREADCRUMB -->
-
-<?php 
-//fungsi menangkap barcode
-
-if(isset($_GET['barcode'])) {
-   $barcode = mysqli_real_escape_string($conn, $_GET["barcode"]);
-    $sql1= "SELECT * FROM barang where barcode='$barcode'";
-    $query=mysqli_query($conn, $sql1);
-    $data=mysqli_fetch_assoc($query);
-    $nama=$data['nama'];
-    $kode=$data['kode'];
-     $stok=$data['sisa'];
-
-    $jumlah ='1';
-
-    
-}
-    ?>
-<!-- tambah -->
-<?php
-
-    if(isset($_POST["keluar"])){
-       if($_SERVER["REQUEST_METHOD"] == "POST"){
-               $nota = mysqli_real_escape_string($conn, $_POST["nota"]);
-                $kode = mysqli_real_escape_string($conn, $_POST["kode"]);
-                 $nama = mysqli_real_escape_string($conn, $_POST["nama"]);
-                 $hbeli = mysqli_real_escape_string($conn, $_POST["hargabeli"]);
-                 $hjual = mysqli_real_escape_string($conn, $_POST["hargajual"]);
-                  $jumlah = mysqli_real_escape_string($conn, $_POST["jumlah"]);
-                   $stok = mysqli_real_escape_string($conn, $_POST["stok"]);
-
-                    $kegiatan = "Stok Keluar";
-                     $status = "pending";
-                    $usr=$_SESSION['nama'];
-                    $today=date('Y-m-d');
-                     $jam=date('H:i');
-                 if($jumlah <= $stok){
-               
-                    $brg=mysqli_query($conn,"SELECT * FROM barang WHERE kode='$kode'");
-                    $ass=mysqli_fetch_assoc($brg);
-                    $oldstok=$ass['sisa'];
-                    $oldout=$ass['terjual'];
-                    $newstok=$oldstok-$jumlah;
-                    $newout=$oldout+$jumlah;
-
-                    $sqlx="UPDATE barang SET sisa='$newstok', terjual='$newout' WHERE kode='$kode'";
-                    $updx=mysqli_query($conn, $sqlx);
-                    if($updx){
-
-                   $sql="select * from stok_keluar_daftar where nota='$nota' and kode_barang='$kode'";
-            $resulte=mysqli_query($conn,$sql);
-
-                 if(mysqli_num_rows($resulte)>0){
-                    $q = mysqli_fetch_assoc($resulte);
-                    $cart = $q['jumlah'];
-                    $newcart = $cart + $jumlah;
-                    $total=$newcart*$hjual;
-                    $modal=$newcart*$hbeli;
-
-
-                    $sqlu ="UPDATE stok_keluar_daftar SET jumlah='$newcart', subbeli='$modal', subtotal='$total' where nota='$nota' AND kode_barang='$kode'";
-                    $ucart=mysqli_query($conn,$sqlu);
-                    if($ucart){
-
-
-                     $sql3 = "UPDATE mutasi SET jumlah='$newcart', sisa='$newstok' WHERE keterangan='$nota' AND kegiatan='$kegiatan' ";
-                     $upd=mysqli_query($conn,$sql3);
-
-                      echo "<script type='text/javascript'>  alert('Jumlah Stok keluar telah ditambah!');</script>";
-                      echo "<script type='text/javascript'>window.location = '$halaman';</script>";
-                    } else {
-                      echo "<script type='text/javascript'>  alert('GAGAL, Periksa kembali input anda!');</script>";
-                    }
-
-                   
-              } else {
-
-                      $total=$jumlah*$hjual;
-                      $modal=$jumlah*$hbeli;
-
-                    $sql2 = "insert into stok_keluar_daftar values( '$nota','$kode','$nama','$jumlah','$modal','$total','')";
-                     $insertan = mysqli_query($conn, $sql2);
-
-                      if($insertan){
-
-             $sql9="INSERT INTO mutasi VALUES('$usr','$today','$jam','$kode','$newstok','$jumlah','stok keluar','$nota','','','pending')";
-                    $mutasi=mysqli_query($conn,$sql9);
-
-
-                      echo "<script type='text/javascript'>  alert('Produk telah dimasukan dalam daftar!');</script>";
-                      echo "<script type='text/javascript'>window.location = '$halaman';</script>";
-                    } else {
-                      echo "<script type='text/javascript'>  alert('GAGAL memasukan produk, periksa kembali!');</script>";
-                    }
-
-
-
-
-              }
-} else {
- echo "<script type='text/javascript'>  alert('Gagal mengupdate jumlah stok!');</script>";
-                      echo "<script type='text/javascript'>window.location = '$halaman';</script>";
-
-}
-
-
-} else {
-
-   echo "<script type='text/javascript'>  alert('Jumlah keluar tidak boleh lebih besar dari stok tersedia!');</script>";
-                      echo "<script type='text/javascript'>window.location = 'stok_out';</script>";
-}
-
-} }
-
-
-
-$query=mysqli_fetch_assoc(mysqli_query($conn,"SELECT SUM(subbeli) as beli, SUM(subtotal) as total FROM stok_keluar_daftar WHERE nota=".autoNumber().""));
- ?>              
-<!-- BOX INSERT BERHASIL -->
-
-         <script>
- window.setTimeout(function() {
-    $("#myAlert").fadeTo(500, 0).slideUp(1000, function(){
-        $(this).remove();
-    });
-}, 5000);
-</script>
-
-
-       <!-- BOX INFORMASI -->
-    <?php
-if ($chmod >= 2 || $_SESSION['jabatan'] == 'admin') {
-  ?>
-
-
-  <!-- KONTEN BODY AWAL -->
-                         <!-- Default box -->
-                         <div class="col-lg-5 col-xs-12">
-      <div class="box">
-        <div class="box-header with-border">
-          <h3 class="box-title">Form Stok Keluar</h3>
-
-          <div class="box-tools pull-right">
-            <button type="button" class="btn btn-box-tool" data-widget="collapse" data-toggle="tooltip"
-                    title="Collapse">
-              <i class="fa fa-minus"></i></button>
-            <button type="button" class="btn btn-box-tool" data-widget="remove" data-toggle="tooltip" title="Remove">
-              <i class="fa fa-times"></i></button>
-          </div>
-        </div>
-        <div class="box-body">
-  <body OnLoad='document.getElementById("barcode").focus();'>
-<form method="get" action="">
-   <div class="row" >
-           <div class="form-group col-md-12 col-xs-12" >
-                  <label for="barang" class="col-sm-2 control-label">Barcode:</label>
-                  <div class="col-sm-8">
-                      <input type="text" class="form-control" id="barcode" name="barcode" >
-                  </div>
-                   <div class="col-sm-2">
-                    <b>atau</b>
-                   </div>
-                </div>
-        </div>
-</form>
-
-   <div class="row" >
-           <div class="form-group col-md-12 col-xs-12" >
-                  <label for="barang" class="col-sm-2 control-label">Pilih Barang:</label>
-                  <div class="col-sm-10">
-                    <select class="form-control select2" style="width: 100%;" name="produk" id="produk">
-                      <option selected="selected"> Pilih Barang</option>
-              <?php
-              error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
-         $sql=mysqli_query($conn,"select *,barang.nama as nama, barang.kode as kode, barang.sku as sku from barang");
-        while ($row=mysqli_fetch_assoc($sql)){
-          if ($barcode==$row['barcode'])
-          echo "<option value='".$row['kode']."' nama='".$row['nama']."' hargabeli='".$row['hargabeli']."' hargajual='".$row['hargajual']."' kode='".$row['kode']."' stok='".$row['sisa']."' selected='selected'>".$row['sku']." | ".$row['nama']."</option>";
-          else
-          echo "<option value='".$row['kode']."' nama='".$row['nama']."' hargabeli='".$row['hargabeli']."' hargajual='".$row['hargajual']."' kode='".$row['kode']."' stok='".$row['sisa']."' >".$row['sku']." | ".$row['nama']."</option>";
-        }
-      ?>
-                    </select>
-                  </div>
-                </div>
-        </div>
-
-
-
-
-<form method="post" action="">
- <div class="row" >
-           <div class="form-group col-md-12 col-xs-12" >
-                  <label for="barang" class="col-sm-2 control-label">Nama Produk:</label>
-                  <div class="col-sm-10">
-                      <input type="text" class="form-control" readonly id="nama" name="nama" value="<?php echo $nama;?>" >
-                       <input type="hidden" class="form-control" readonly id="kode" name="kode" value="<?php echo $kode;?>">
-                       <input type="hidden" class="form-control" readonly id="nota" name="nota" value="<?php echo autoNumber(); ?>">
-                      
-                  </div>
-                  
-                </div>
-        </div>
- 
-<?php
-error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
-?>
-
-<div class="row" >
-           <div class="form-group col-md-12 col-xs-12" >
-                  <label for="barang" class="col-sm-2 control-label">Stok:</label>
-                  <div class="col-sm-5">
-                      <input type="text" class="form-control" id="stok" name="stok" value="<?php echo $stok;?>" readonly>
-                      <input type="hidden" class="form-control" id="hbeli" name="hargabeli" value="<?php echo $hbeli;?>" readonly>
-                      <input type="hidden" class="form-control" id="hjual" name="hargajual" value="<?php echo $hjual;?>" readonly>
-                  </div>
-                  
-                </div>
-        </div>
-
-
-<div class="row" >
-           <div class="form-group col-md-12 col-xs-12" >
-                  <label for="barang" class="col-sm-2 control-label">Jumlah:</label>
-                  <div class="col-sm-5">
-                      <input type="text" class="form-control" id="jumlah" name="jumlah" value="<?php echo $jumlah;?>" >
-                  </div>
-                   <div class="col-sm-5">
-                    <button type="submit" name="keluar" class="btn bg-maroon btn-flat btn-block">Tambahkan</button>
-                   </div>
-                </div>
-        </div>
-
-
-</form>
-        </div>
-
-                                <!-- /.box-body -->
+                        <div class="col-lg-5 col-xs-12">
+                            <div class="box">
+                                <div class="box-header with-border">
+                                    <h3 class="box-title">Form Stok Keluar</h3>
+                                </div>
+                                <div class="box-body">
+                                    <form method="get" action="">
+                                        <div class="row">
+                                            <div class="form-group col-md-12 col-xs-12">
+                                                <label for="barcode" class="col-sm-2 control-label">Barcode:</label>
+                                                <div class="col-sm-8">
+                                                    <input type="text" class="form-control" id="barcode" name="barcode" autofocus>
+                                                    <input type="hidden" name="nota" value="<?php echo $nota_aktif; ?>">
+                                                </div>
+                                                <div class="col-sm-2"><b>atau</b></div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                    <div class="row">
+                                        <div class="form-group col-md-12 col-xs-12">
+                                            <label for="produk" class="col-sm-2 control-label">Pilih Barang:</label>
+                                            <div class="col-sm-10">
+                                                <select class="form-control select2" style="width: 100%;" id="produk">
+                                                    <option selected="selected">Pilih Barang</option>
+                                                    <?php
+                                                    $sql_brg = mysqli_query($conn, "SELECT * FROM barang ORDER BY nama");
+                                                    while ($row = mysqli_fetch_assoc($sql_brg)) {
+                                                        $selected = ($kode_val == $row['kode']) ? "selected" : "";
+                                                        echo "<option value='" . $row['kode'] . "' nama='" . htmlspecialchars($row['nama']) . "' hargabeli='" . $row['hargabeli'] . "' hargajual='" . $row['hargajual'] . "' stok='" . $row['sisa'] . "' $selected>" . htmlspecialchars($row['nama']) . "</option>";
+                                                    }
+                                                    ?>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <form method="post" action="">
+                                        <input type="hidden" id="nota" name="nota" value="<?php echo $nota_aktif; ?>">
+                                        <input type="hidden" id="kode" name="kode" value="<?php echo htmlspecialchars($kode_val); ?>">
+                                        <input type="hidden" id="hbeli" name="hargabeli" value="<?php echo htmlspecialchars($hbeli_val); ?>">
+                                        <input type="hidden" id="hjual" name="hargajual" value="<?php echo htmlspecialchars($hjual_val); ?>">
+                                        <div class="row">
+                                            <div class="form-group col-md-12 col-xs-12">
+                                                <label for="nama" class="col-sm-2 control-label">Nama Produk:</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" class="form-control" readonly id="nama" name="nama" value="<?php echo htmlspecialchars($nama_val); ?>">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="form-group col-md-12 col-xs-12">
+                                                <label for="stok" class="col-sm-2 control-label">Stok:</label>
+                                                <div class="col-sm-5">
+                                                    <input type="text" class="form-control" id="stok" name="stok" value="<?php echo htmlspecialchars($stok_val); ?>" readonly>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="form-group col-md-12 col-xs-12">
+                                                <label for="jumlah" class="col-sm-2 control-label">Jumlah:</label>
+                                                <div class="col-sm-5">
+                                                    <input type="number" class="form-control" id="jumlah" name="jumlah" value="<?php echo $jumlah_val; ?>" min="1">
+                                                </div>
+                                                <div class="col-sm-5">
+                                                    <button type="submit" name="keluar" class="btn bg-yellow btn-flat btn-block">Tambahkan</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
-                          </div>
-
-
-
-
-                           <div class="col-lg-7 col-xs-12">
-      <div class="box">
-        <div class="box-header with-border">
-          <h3 class="box-title">Daftar Keluar</h3>
-
-          <div class="box-tools pull-right">
-            <button type="button" class="btn btn-box-tool" data-widget="collapse" data-toggle="tooltip"
-                    title="Collapse">
-              <i class="fa fa-minus"></i></button>
-            <button type="button" class="btn btn-box-tool" data-widget="remove" data-toggle="tooltip" title="Remove">
-              <i class="fa fa-times"></i></button>
-          </div>
-        </div>
-        <div class="box-body">
-          
-
-
-          <div class="row">
-                <div class="col-md-12">
-                  <div class="box box-success">
-                    <div class="box-header with-border">
-         
-           </div>
-
-           <?php
-           error_reporting(E_ALL ^ E_DEPRECATED);
-
-           $sql    = "select * from stok_keluar_daftar where nota =".autoNumber()." order by no";
-           $result = mysqli_query($conn, $sql);
-           $rpp    = 30;
-           $reload = "$halaman"."?pagination=true";
-           $page   = intval(isset($_GET["page"]) ? $_GET["page"] : 0);
-
-
-
-           if ($page <= 0)
-           $page = 1;
-           $tcount  = mysqli_num_rows($result);
-           $tpages  = ($tcount) ? ceil($tcount / $rpp) : 1;
-           $count   = 0;
-           $i       = ($page - 1) * $rpp;
-           $no_urut = ($page - 1) * $rpp;
-           ?>
-           <div class="box-body table-responsive">
-              <table class="data table table-hover table-bordered">
-                  <thead>
-                      <tr>
-                          <th style="width:10px">No</th>
-                          <th>Nama Barang</th>
-                          <th style="width:10%">Jumlah Keluar</th>
-                          
-           <?php  if ($chmod >= 3 || $_SESSION['jabatan'] == 'admin') { ?>
-                          <th style="width:10px">Opsi</th>
-           <?php }else{} ?>
-                      </tr>
-                  </thead>
-                    <?php
-           error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
-           while(($count<$rpp) && ($i<$tcount)) {
-           mysqli_data_seek($result,$i);
-           $fill = mysqli_fetch_array($result);
-           ?>
-           <tbody>
-           <tr>
-           <td><?php echo ++$no_urut;?></td>
-
-          
-           <td><?php  echo mysqli_real_escape_string($conn, $fill['nama']); ?></td>
-          
-           <td><?php  echo mysqli_real_escape_string($conn, $fill['jumlah']); ?></td>
-        
-           <td>
-           <?php  if ($chmod >= 4 || $_SESSION['jabatan'] == 'admin') { ?>
-           <button type="button" class="btn btn-danger btn-xs" onclick="window.location.href='component/delete/delete_stok?keg=<?php echo $kegiatan.'&'; ?>get=<?php echo 'out'.'&'; ?>barang=<?php echo $fill['kode_barang'].'&'; ?>jumlah=<?php echo $fill['jumlah'].'&'; ?>nota=<?php echo autoNumber().'&'; ?>no=<?php echo $fill['no'].'&'; ?>forward=<?php echo $tabel.'&';?>forwardpage=<?php echo "".$forwardpage.'&'; ?>chmod=<?php echo $chmod; ?>'">Hapus</button>
-           <?php } else {}?>
-           </td></tr>
-           <?php
-           $i++;
-           $count++;
-           }
-
-           ?>
-           </tbody></table>
-           <div align="right"><?php if($tcount>=$rpp){ echo paginate_one($reload, $page, $tpages);}else{} ?></div>
-
-
-           </div>
-
-           </div>
-
-
-         </div>
-                  </div>
-
-                  <div class="row">
-                <div class="col-md-12">
-                  <div class="box box-danger">
-                    <div class="box-header with-border">
-
-<form method="post" action="">
-                      
-<div class="row" >
-           <div class="form-group col-md-12 col-xs-12" >
-                  <label for="barang" class="col-sm-2 control-label">Keterangan:</label>
-                  <div class="col-sm-10">
-                     <input type="text" class="form-control" name="ket">
-                  </div>
-                  
-                </div>
-        </div>
-        <br>
-             <input type="hidden" class="form-control" readonly id="notae" name="notae" value="<?php echo autoNumber(); ?>">
-             <input type="hidden" class="form-control" readonly name="modal" value="<?php echo $query['beli']; ?>">
-             <input type="hidden" class="form-control" readonly name="total" value="<?php echo $query['total']; ?>">
-
-           <div class="row" >
-           <div class="form-group col-md-12 col-xs-12" >
-                 <div class="col-lg-12">
-                 <button type="submit" name="simpan" class="btn btn-flat bg-teal btn-block">SIMPAN</button>
-                  </div>
-                   
-                </div>
-        </div>
-</form>
-
-
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-
-
-
-
-        </div>
-
-                                <!-- /.box-body -->
-                            </div>
-                          </div>
-
-
-
-
-<?php
-
-    if(isset($_POST["simpan"])){
-       if($_SERVER["REQUEST_METHOD"] == "POST"){
-               $nota = mysqli_real_escape_string($conn, $_POST["notae"]);
-               $ket= mysqli_real_escape_string($conn, $_POST["ket"]);
-               $modal= mysqli_real_escape_string($conn, $_POST["modal"]);
-               $total= mysqli_real_escape_string($conn, $_POST["total"]);
-                $tgl= date('Y-m-d');
-                  $usr=$_SESSION['nouser'];
-                  $cab='01';
-
-                    $kegiatan = "Stok Keluar";
-
-                    $sql2 = "insert into stok_keluar values( '$nota','$cab','$tgl','customer','$usr','$ket','$modal','$total','')";
-                     $insertan = mysqli_query($conn, $sql2);
-
-                        $mut="UPDATE mutasi SET status='berhasil' WHERE keterangan='$nota' AND kegiatan='$kegiatan'";
-                $muta=mysqli_query($conn,$mut);
-
-                     echo "<script type='text/javascript'>  alert('Stok selesai dikeluarkan!');</script>";
-                      echo "<script type='text/javascript'>window.location = 'stok_keluar';</script>";
-
-
-             } } ?>
-
-
-
-<?php
-
-    if(isset($_POST["surat"])){
-       if($_SERVER["REQUEST_METHOD"] == "POST"){
-               $nota = mysqli_real_escape_string($conn, $_POST["notae"]);
-               $ket= mysqli_real_escape_string($conn, $_POST["ket"]);
-                $tgl= date('Y-m-d');
-                  $usr=$_SESSION['nouser'];
-                  $cab='01';
-
-                    $kegiatan = "Stok Keluar";
-
-                    $sql2 = "insert into stok_keluar values( '$nota','$cab','$tgl','customer','$usr','$ket','')";
-                     $insertan = mysqli_query($conn, $sql2);
-
-                        $mut="UPDATE mutasi SET status='berhasil' WHERE keterangan='$nota' AND kegiatan='$kegiatan'";
-                $muta=mysqli_query($conn,$mut);
-
-                     
-                      echo "<script type='text/javascript'>window.location = 'surat_buat?q=$nota';</script>";
-
-
-             } } ?>
-
-
-
-
-
-
-
                         </div>
 
-<?php
-} else {
-?>
-   <div class="callout callout-danger">
-    <h4>Info</h4>
-    <b>Hanya user tertentu yang dapat mengakses halaman <?php echo $dataapa;?> ini .</b>
-    </div>
-    <?php
-}
-?>
-                        <!-- ./col -->
-                    </div>
+                        <div class="col-lg-7 col-xs-12">
+                            <div class="box">
+                                <div class="box-header with-border">
+                                    <h3 class="box-title">Daftar Barang</h3>
+                                </div>
+                                <div class="box-body table-responsive">
+                                    <table class="data table table-hover table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:10px">No</th>
+                                                <th>Nama Barang</th>
+                                                <th style="width:10%">Qty</th>
+                                                <?php if ($chmod >= 3 || $_SESSION['jabatan'] == 'admin') { ?>
+                                                    <th style="width:10px">Opsi</th>
+                                                <?php } ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        <?php
+                                        $sql_daftar = "SELECT * FROM stok_keluar_daftar WHERE nota ='$nota_aktif' ORDER BY no";
+                                        $result_daftar = mysqli_query($conn, $sql_daftar);
+                                        $no_urut = 0;
+                                        while ($fill = mysqli_fetch_array($result_daftar)) {
+                                            $no_urut++;
+                                        ?>
+                                            <tr>
+                                                <td><?php echo $no_urut; ?></td>
+                                                <td><?php echo htmlspecialchars($fill['nama']); ?></td>
+                                                <td><?php echo htmlspecialchars($fill['jumlah']); ?></td>
+                                                <td>
+                                                <?php if ($chmod >= 4 || $_SESSION['jabatan'] == 'admin') { 
+                                                    // PERBAIKAN: Menambahkan parameter forwardpage ke URL Hapus
+                                                    $delete_url = "component/delete/delete_stok.php?keg=out&barang=".$fill['kode_barang']."&nota=".$fill['nota']."&jumlah=".$fill['jumlah']."&no=".$fill['no']."&forwardpage=".$halaman;
+                                                ?>
+                                                    <a href="<?php echo $delete_url; ?>" class="btn btn-danger btn-xs"><i class='fa fa-trash'></i></a>
+                                                    
+                                                <?php } ?>
+                                                </td>
+                                            </tr>
+                                        <?php } ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <?php if (mysqli_num_rows(mysqli_query($conn, "SELECT * FROM stok_keluar_daftar WHERE nota ='$nota_aktif'")) > 0): ?>
+                            <div class="box box-danger">
+                                <div class="box-header with-border"></div>
+                                <div class="box-body">
+                                    <form method="post" action="" id="form-simpan">
+                                        <input type="hidden" name="notae" value="<?php echo $nota_aktif; ?>">
+                                        <input type="hidden" name="modal" value="<?php echo $query_total['beli']; ?>">
+                                        <input type="hidden" name="total" value="<?php echo $query_total['total']; ?>">
+                                        <input type="hidden" name="simpan" value="true">
+                                        
+                                        <div class="row">
+                                            <div class="form-group col-md-12 col-xs-12">
+                                                <label for="pelanggan" class="col-sm-2 control-label">Lokasi:</label>
+                                                <div class="col-sm-10">
+                                                    <select class="form-control select2" style="width: 100%;" name="pelanggan" required>
+                                                        <option value="" disabled selected>Pilih Lokasi</option>
+                                                        <?php
+                                                        $sql_pelanggan = mysqli_query($conn, "SELECT * FROM pelanggan ORDER BY nama");
+                                                        while ($row_pelanggan = mysqli_fetch_assoc($sql_pelanggan)) {
+                                                            echo "<option value='" . htmlspecialchars($row_pelanggan['kode']) . "'>" . htmlspecialchars($row_pelanggan['kode']) . " | " . htmlspecialchars($row_pelanggan['nama']) . "</option>";
+                                                        }
+                                                        ?>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <br>
+                                        
+                                        <div class="row">
+                                            <div class="form-group col-md-12 col-xs-12">
+                                                <label for="driver" class="col-sm-2 control-label">Dibawa:</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" class="form-control" name="driver" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <br>
 
-                    <!-- /.row -->
-                    <!-- Main row -->
-                    <div class="row">
-                        <!-- Left col -->
-                        <!-- /.Left col -->
+                                        <div class="row">
+                                            <div class="form-group col-md-12 col-xs-12">
+                                                <label for="nohp" class="col-sm-2 control-label">No. HP:</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" class="form-control" name="nohp">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <br>
+
+                                        <!-- <div class="row">
+                                            <div class="form-group col-md-12 col-xs-12">
+                                                <label for="nopol" class="col-sm-2 control-label">No. Polisi:</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" class="form-control" name="nopol" placeholder="Opsional">
+                                                </div>
+                                            </div>
+                                        </div> -->
+
+                                        <div class="row">
+                                            <div class="form-group col-md-12 col-xs-12">
+                                                <label for="ket" class="col-sm-2 control-label">Keterangan:</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" class="form-control" name="ket" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <br>
+                                        <div class="row">
+                                            <div class="form-group col-md-12 col-xs-12">
+                                                <button type="button" id="btn-simpan" class="btn btn-flat bg-blue btn-block">SIMPAN & BUAT SURAT JALAN</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                    <!-- /.row (main row) -->
-                </section>
-                <!-- /.content -->
+                    <?php else: ?>
+                    <div class="callout callout-danger">
+                        <h4>Info</h4>
+                        <b>Hanya user tertentu yang dapat mengakses halaman <?php echo $dataapa; ?> ini.</b>
+                    </div>
+                    <?php endif; ?>
+                </div>
             </div>
-            <!-- /.content-wrapper -->
-            <?php  footer(); ?>
-            <div class="control-sidebar-bg"></div>
-        </div>
-          <!-- ./wrapper -->
+        </section>
+    </div>
+    <?php footer(); ?>
+    <div class="control-sidebar-bg"></div>
+</div>
 
 <!-- Script -->
-    <script src='jquery-3.1.1.min.js' type='text/javascript'></script>
-
-    <!-- jQuery UI -->
-    <link href='jquery-ui.min.css' rel='stylesheet' type='text/css'>
-    <script src='jquery-ui.min.js' type='text/javascript'></script>
-
 <script src="dist/plugins/jQuery/jquery-2.2.3.min.js"></script>
-        <script src="libs/1.11.4-jquery-ui.min.js"></script>
-
-
-
-
-
-<script>
-$("#produk").on("change", function(){
-
-  var nama = $("#produk option:selected").attr("nama");
-   var kode = $("#produk option:selected").attr("kode");
-    var stok = $("#produk option:selected").attr("stok");
-     var hbeli = $("#produk option:selected").attr("hargabeli");
-      var hjual = $("#produk option:selected").attr("hargajual");
- 
-
-  $("#nama").val(nama);
-   $("#kode").val(kode);
-    $("#stok").val(stok);
-     $("#hbeli").val(hbeli);
-      $("#hjual").val(hjual);
-  $("#jumlah").val(1);
-});
-</script>
-
-
-        <script>
-  $.widget.bridge('uibutton', $.ui.button);
-</script>
-        <script src="dist/bootstrap/js/bootstrap.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
-        <script src="dist/plugins/morris/morris.min.js"></script>
-        <script src="dist/plugins/sparkline/jquery.sparkline.min.js"></script>
-        <script src="dist/plugins/jvectormap/jquery-jvectormap-1.2.2.min.js"></script>
-        <script src="dist/plugins/jvectormap/jquery-jvectormap-world-mill-en.js"></script>
-        <script src="dist/plugins/knob/jquery.knob.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.11.2/moment.min.js"></script>
-        <script src="dist/plugins/daterangepicker/daterangepicker.js"></script>
-        <script src="dist/plugins/datepicker/bootstrap-datepicker.js"></script>
-        <script src="dist/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js"></script>
-        <script src="dist/plugins/slimScroll/jquery.slimscroll.min.js"></script>
-        <script src="dist/plugins/fastclick/fastclick.js"></script>
-        <script src="dist/js/app.min.js"></script>
-        <script src="dist/js/demo.js"></script>
-    <script src="dist/plugins/datatables/jquery.dataTables.min.js"></script>
-    <script src="dist/plugins/datatables/dataTables.bootstrap.min.js"></script>
-    <script src="dist/plugins/slimScroll/jquery.slimscroll.min.js"></script>
-    <script src="dist/plugins/fastclick/fastclick.js"></script>
-    <script src="dist/plugins/select2/select2.full.min.js"></script>
-    <script src="dist/plugins/input-mask/jquery.inputmask.js"></script>
-    <script src="dist/plugins/input-mask/jquery.inputmask.date.extensions.js"></script>
-    <script src="dist/plugins/input-mask/jquery.inputmask.extensions.js"></script>
-    <script src="dist/plugins/timepicker/bootstrap-timepicker.min.js"></script>
-    <script src="dist/plugins/iCheck/icheck.min.js"></script>
-
-<!--fungsi AUTO Complete-->
-
-<!--AUTO Complete-->
+<script src="dist/bootstrap/js/bootstrap.min.js"></script>
+<script src="dist/plugins/select2/select2.full.min.js"></script>
+<script src="dist/plugins/slimScroll/jquery.slimscroll.min.js"></script>
+<script src="dist/plugins/fastclick/fastclick.js"></script>
+<script src="dist/js/app.min.js"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
 <script>
-  $(function () {
-    //Initialize Select2 Elements
+$(function () {
     $(".select2").select2();
 
-    //Datemask dd/mm/yyyy
-    $("#datemask").inputmask("yyyy-mm-dd", {"placeholder": "yyyy/mm/dd"});
-    //Datemask2 mm/dd/yyyy
-    $("#datemask2").inputmask("yyyy-mm-dd", {"placeholder": "yyyy/mm/dd"});
-    //Money Euro
-    $("[data-mask]").inputmask();
-
-    //Date range picker
-    $('#reservation').daterangepicker();
-    //Date range picker with time picker
-    $('#reservationtime').daterangepicker({timePicker: true, timePickerIncrement: 30, format: 'YYYY/MM/DD h:mm A'});
-    //Date range as a button
-    $('#daterange-btn').daterangepicker(
-        {
-          ranges: {
-            'Hari Ini': [moment(), moment()],
-            'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-            'Akhir 7 Hari': [moment().subtract(6, 'days'), moment()],
-            'Akhir 30 Hari': [moment().subtract(29, 'days'), moment()],
-            'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
-            'Akhir Bulan': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-          },
-          startDate: moment().subtract(29, 'days'),
-          endDate: moment()
-        },
-        function (start, end) {
-          $('#daterange-btn span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
-        }
-    );
-
-    //Date picker
-    $('#datepicker').datepicker({
-      autoclose: true
+    $("#produk").on("change", function(){
+        var selectedOption = $("#produk option:selected");
+        var nama = selectedOption.attr("nama");
+        var kode = selectedOption.val();
+        var stok = selectedOption.attr("stok");
+        var hbeli = selectedOption.attr("hargabeli");
+        var hjual = selectedOption.attr("hargajual");
+        
+        $("#nama").val(nama);
+        $("#kode").val(kode);
+        $("#stok").val(stok);
+        $("#hbeli").val(hbeli);
+        $("#hjual").val(hjual);
+        $("#jumlah").val(1).focus();
     });
 
-   $('.datepicker').datepicker({
-    dateFormat: 'yyyy-mm-dd'
- });
-
-   //Date picker 2
-   $('#datepicker2').datepicker('update', new Date());
-
-    $('#datepicker2').datepicker({
-      autoclose: true
+    $('#btn-simpan').on('click', function(e) {
+        e.preventDefault();
+        swal({
+            title: "Anda Yakin?",
+            text: "Pastikan semua data sudah benar sebelum menyimpan.",
+            icon: "warning",
+            buttons: ["Batal", "Ya, Simpan!"],
+            dangerMode: true,
+        })
+        .then((willSave) => {
+            if (willSave) {
+                $('#form-simpan').submit();
+            }
+        });
     });
+});
 
-   $('.datepicker2').datepicker({
-    dateFormat: 'yyyy-mm-dd'
- });
-
-
-    //iCheck for checkbox and radio inputs
-    $('input[type="checkbox"].minimal, input[type="radio"].minimal').iCheck({
-      checkboxClass: 'icheckbox_minimal-blue',
-      radioClass: 'iradio_minimal-blue'
-    });
-    //Red color scheme for iCheck
-    $('input[type="checkbox"].minimal-red, input[type="radio"].minimal-red').iCheck({
-      checkboxClass: 'icheckbox_minimal-red',
-      radioClass: 'iradio_minimal-red'
-    });
-    //Flat red color scheme for iCheck
-    $('input[type="checkbox"].flat-red, input[type="radio"].flat-red').iCheck({
-      checkboxClass: 'icheckbox_flat-green',
-      radioClass: 'iradio_flat-green'
-    });
-
-    //Colorpicker
-    $(".my-colorpicker1").colorpicker();
-    //color picker with addon
-    $(".my-colorpicker2").colorpicker();
-
-    //Timepicker
-    $(".timepicker").timepicker({
-      showInputs: false
-    });
-  });
+document.addEventListener("DOMContentLoaded", function() {
+    <?php
+    if (isset($_SESSION['flash_message'])) {
+        $flash = $_SESSION['flash_message'];
+        $type = $flash['type'];
+        $message = addslashes($flash['message']);
+        $title = ($type == 'success') ? 'Berhasil!' : (($type == 'warning') ? 'Perhatian!' : 'Gagal!');
+        
+        echo "swal({ title: '$title', text: '$message', icon: '$type' });";
+        
+        unset($_SESSION['flash_message']);
+    }
+    ?>
+});
 </script>
 </body>
 </html>

@@ -2,72 +2,78 @@
 include "../../configuration/config_connect.php";
 include "../../configuration/config_session.php";
 include "../../configuration/config_chmod.php";
-include "../../configuration/config_etc.php";
-$forward =$_GET['forward'];
-$no = $_GET['no'];
-$nota = $_GET['nota'];
-$jml = $_GET['jumlah'];
-$kode = $_GET['kode'];
-$chmod = $_GET['chmod'];
-$forwardpage = $_GET['forwardpage'];
-?>
 
-<?php
-if( $chmod == '4' || $chmod == '5' || $_SESSION['jabatan'] =='admin' || $_SESSION['jabatan'] == 'guru'){
-
-
-$sqle3="SELECT * FROM barang where kode='$kode'";
-  $hasile3=mysqli_query($conn,$sqle3);
-  $row=mysqli_fetch_assoc($hasile3);
-  $keluar=$row['terjual']-$jml;
-  $stok=$row['sisa']+$jml;
-
-  $sqla=mysqli_query($conn,"UPDATE barang SET sisa='$stok', terjual='$keluar' WHERE kode='$kode'");
-
-  $sql = "delete from $forward where no='".$no."'";
- if (mysqli_query($conn, $sql)) {
-
-  $sqlb=mysqli_num_rows(mysqli_query($conn,"SELECT * FROM stok_keluar_daftar WHERE nota='$nota'"));
-  if($sqlb==0){
-
-$sqlc=mysqli_query($conn,"DELETE FROM stok_keluar WHERE nota='$nota'");
-$sqld=mysqli_query($conn,"DELETE FROM surat WHERE nota='$nota'");
-  }
-
- ?>
-
-
-
-  <body onload="setTimeout(function() { document.frm1.submit() }, 10)">
-  <form action="<?php echo $baseurl; ?>/<?php echo $forwardpage;?>?nota=<?php echo $nota;?>" name="frm1" method="post">
-
-  <input type="hidden" name="hapusberhasil" value="1" />
-
-<?php
- } else{
- ?>   <body onload="setTimeout(function() { document.frm1.submit() }, 10)">
-	  <input type="hidden" name="hapusberhasil" value="2" />
- <?php
- }
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
 }
-else{
 
- ?>
-  <body onload="setTimeout(function() { document.frm1.submit() }, 10)">
-   <form action="<?php echo $baseurl; ?>/<?php echo $forwardpage;?>?nota=<?php echo $nota;?>" name="frm1" method="post">
+// Ambil data dari URL dengan aman
+$no          = isset($_GET['no']) ? (int)$_GET['no'] : 0;
+$nota        = isset($_GET['nota']) ? mysqli_real_escape_string($conn, $_GET['nota']) : '';
+$kode_barang = isset($_GET['kode']) ? mysqli_real_escape_string($conn, $_GET['kode']) : '';
+$jumlah      = isset($_GET['jumlah']) ? (int)$_GET['jumlah'] : 0;
+$halaman_detail = "stok_keluar_detail.php"; // Halaman detail pembatalan
+$halaman_daftar = "stok_keluar.php";     // Halaman daftar transaksi
 
+// Validasi dasar
+if (empty($no) || empty($nota) || empty($kode_barang) || $jumlah <= 0) {
+    header("Location: ../../" . $halaman_daftar);
+    exit();
+}
 
-	  <input type="hidden" name="hapusberhasil" value="2" />
- <?php
- }
+// Cek hak akses
+if ($chmenu5 >= 4 || $_SESSION['jabatan'] == 'admin') {
+
+    // Ambil data stok saat ini
+    $sql_get_stok = "SELECT sisa, terjual FROM barang WHERE kode='$kode_barang'";
+    $res_get_stok = mysqli_query($conn, $sql_get_stok);
+    
+    if ($row = mysqli_fetch_assoc($res_get_stok)) {
+        
+        // Kembalikan stok
+        $stok_baru = (int)$row['sisa'] + $jumlah;
+        $terjual_baru = (int)$row['terjual'] - $jumlah;
+        $sql_update_stok = "UPDATE barang SET sisa='$stok_baru', terjual='$terjual_baru' WHERE kode='$kode_barang'";
+        
+        if (mysqli_query($conn, $sql_update_stok)) {
+            // Hapus item dari daftar sementara
+            $sql_delete_item = "DELETE FROM stok_keluar_daftar WHERE no=$no";
+            mysqli_query($conn, $sql_delete_item);
+
+            // Hapus mutasi terkait
+            $sql_delete_mutasi = "DELETE FROM mutasi WHERE keterangan = '$nota' AND kodebarang = '$kode_barang'";
+            mysqli_query($conn, $sql_delete_mutasi);
+
+            // Cek apakah transaksi utama menjadi kosong
+            $sql_check_empty = "SELECT COUNT(*) as total FROM stok_keluar_daftar WHERE nota='$nota'";
+            $res_check_empty = mysqli_query($conn, $sql_check_empty);
+            $row_check_empty = mysqli_fetch_assoc($res_check_empty);
+
+            if($row_check_empty['total'] == 0){
+                // Jika kosong, hapus transaksi utama dan surat jalan, lalu arahkan ke halaman daftar
+                mysqli_query($conn, "DELETE FROM stok_keluar WHERE nota='$nota'");
+                mysqli_query($conn, "DELETE FROM surat WHERE nota='$nota'");
+                $_SESSION['flash_message'] = ['type' => 'success', 'message' => 'Transaksi berhasil dibatalkan sepenuhnya.'];
+                header("Location: ../../" . $halaman_daftar);
+                exit();
+            }
+
+            // Jika masih ada item, kembali ke halaman detail
+            $_SESSION['flash_message'] = ['type' => 'info', 'message' => 'Satu item telah berhasil dihapus.'];
+            header("Location: ../../" . $halaman_detail . "?nota=" . $nota);
+            exit();
+
+        } else {
+            $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Gagal mengembalikan stok barang!'];
+        }
+    } else {
+        $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Barang tidak ditemukan.'];
+    }
+} else {
+    $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Anda tidak memiliki izin untuk melakukan aksi ini.'];
+}
+
+// Arahkan kembali jika ada kegagalan
+header("Location: ../../" . $halaman_detail . "?nota=" . $nota);
+exit();
 ?>
-<table width="100%" align="center" cellspacing="0">
-  <tr>
-    <td height="500px" align="center" valign="middle"><img src="../../dist/img/load.gif">
-  </tr>
-</table>
-
-
-   </form>
-<meta http-equiv="refresh" content="10;url=jump?forward=<?php echo $forward.'&';?>forwardpage=<?php echo $forwardpage.'&'; ?>chmod=<?php echo $chmod; ?>">
-</body>
