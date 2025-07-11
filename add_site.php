@@ -26,8 +26,8 @@ if (!login_check()) {
 // ===================================================================
 error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
 include "configuration/config_chmod.php";
-$halaman       = "customer";
-$dataapa       = "Pelanggan";
+$halaman       = "site";
+$dataapa       = "Lokasi";
 $tabeldatabase = "pelanggan";
 $chmod         = $chmenu2;
 $forward       = mysqli_real_escape_string($conn, $tabeldatabase);
@@ -64,7 +64,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan'])) {
             // Perbaikan: Menggunakan kolom 'notelp' sesuai database
             $sql_update = "UPDATE $tabeldatabase SET nama='$nama', notelp='$nohp', alamat='$alamat' WHERE kode='$kode'";
             if (mysqli_query($conn, $sql_update)) {
-                $alert_script = "swal('Berhasil!', 'Data pelanggan telah diupdate!', 'success').then(function() { window.location = '$forwardpage'; });";
+                $alert_script = "swal('Berhasil!', 'Data Lokasi telah diupdate!', 'success').then(function() { window.location = '$forwardpage'; });";
             } else {
                 $error_msg = addslashes(mysqli_error($conn));
                 $alert_script = "swal('Gagal!', 'Gagal mengupdate data. Error: $error_msg', 'error');";
@@ -77,12 +77,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan'])) {
             $sql_check    = "SELECT kode FROM $tabeldatabase WHERE kode='$kode'";
             $result_check = mysqli_query($conn, $sql_check);
             if (mysqli_num_rows($result_check) > 0) {
-                $alert_script = "swal('Gagal!', 'Kode pelanggan sudah ada.', 'error');";
+                $alert_script = "swal('Gagal!', 'Kode Lokasi sudah ada.', 'error');";
             } else {
                 // Perbaikan: Query INSERT eksplisit dan menggunakan kolom 'notelp'
                 $sql_insert = "INSERT INTO $tabeldatabase (kode, nama, notelp, alamat) VALUES ('$kode', '$nama', '$nohp', '$alamat')";
                 if (mysqli_query($conn, $sql_insert)) {
-                    $alert_script = "swal('Berhasil!', 'Data pelanggan telah disimpan!', 'success').then(function() { window.location = '$forwardpage'; });";
+                    $alert_script = "swal('Berhasil!', 'Data Lokasi telah disimpan!', 'success').then(function() { window.location = '$forwardpage'; });";
                 } else {
                     $error_msg = addslashes(mysqli_error($conn));
                     $alert_script = "swal('Gagal!', 'Data gagal disimpan. Error: $error_msg', 'error');";
@@ -149,15 +149,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan'])) {
                                 <div class="box-body">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="kode" class="col-sm-3 control-label">Kode Pelanggan</label>
+                                            <label for="kode" class="col-sm-3 control-label">Kode Lokasi</label>
                                             <div class="col-sm-9">
                                                 <input type="text" class="form-control" id="kode" name="kode" value="<?php echo htmlspecialchars($kode_form); ?>" readonly>
                                             </div>
                                         </div>
                                         <div class="form-group">
-                                            <label for="nama" class="col-sm-3 control-label">Nama Pelanggan</label>
+                                            <label for="nama" class="col-sm-3 control-label">Nama Lokasi</label>
                                             <div class="col-sm-9">
-                                                <input type="text" class="form-control" id="nama" name="nama" value="<?php echo htmlspecialchars($nama_form); ?>" placeholder="Masukan Nama Pelanggan" required>
+                                                <input type="text" class="form-control" id="nama" name="nama" value="<?php echo htmlspecialchars($nama_form); ?>" placeholder="Masukan Lokasi" required>
                                             </div>
                                         </div>
                                     </div>

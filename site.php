@@ -14,7 +14,7 @@ if (!login_check()) {
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Manajemen Supplier</title>
+    <title>Manajemen Pelanggan</title>
     <!-- Tambahkan pustaka SweetAlert -->
     <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 </head>
@@ -34,9 +34,9 @@ if (!login_check()) {
                     <?php
                     error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
                     include "configuration/config_chmod.php";
-                    $halaman = "supplier";
-                    $dataapa = "Supplier";
-                    $tabeldatabase = "supplier";
+                    $halaman = "site";
+                    $dataapa = "Site";
+                    $tabeldatabase = "pelanggan";
                     $chmod = $chmenu2;
                     $forward = mysqli_real_escape_string($conn, $tabeldatabase);
                     $forwardpage = mysqli_real_escape_string($conn, $halaman);
@@ -55,7 +55,7 @@ if (!login_check()) {
                         <div class="box">
                             <div class="box-header with-border">
                                 <h3 class="box-title" style="vertical-align: middle; margin-right: 10px;"><?php echo $dataapa; ?></h3>
-                                <a href="add_supplier" class="btn bg-blue btn-sm" style="vertical-align: middle;"><i class="fa fa-plus"></i> Tambah</a>
+                                <a href="add_site" class="btn bg-blue btn-sm" style="vertical-align: middle;"><i class="fa fa-plus"></i> Tambah</a>
                                 <div class="box-tools pull-right">
                                     <form method="post" action="">
                                         <div class="input-group input-group-sm" style="width: 250px;">
@@ -95,10 +95,9 @@ if (!login_check()) {
                                     <thead>
                                         <tr>
                                             <th>No</th>
-                                            <th>Kode Supplier</th>
+                                            <th>Kode Site</th>
                                             <th>Nama</th>
-                                            <th>Tanggal Daftar</th>
-                                            <th>No Handphone</th>
+                                            <th>No Telepon</th>
                                             <th>Alamat</th>
                                             <?php if ($chmod >= 3 || $_SESSION['jabatan'] == 'admin') { ?>
                                                 <th style="width:100px;">Opsi</th>
@@ -114,7 +113,6 @@ if (!login_check()) {
                                             <td><?php echo ++$no_urut; ?></td>
                                             <td><?php echo htmlspecialchars($fill['kode']); ?></td>
                                             <td><?php echo htmlspecialchars($fill['nama']); ?></td>
-                                            <td><?php echo htmlspecialchars(date("d-m-Y", strtotime($fill['tgldaftar']))); ?></td>
                                             <td><?php echo htmlspecialchars($fill['nohp']); ?></td>
                                             <td><?php echo htmlspecialchars($fill['alamat']); ?></td>
                                             <?php if ($chmod >= 3 || $_SESSION['jabatan'] == 'admin') { ?>
@@ -131,7 +129,7 @@ if (!login_check()) {
                                     <?php
                                         }
                                     } else {
-                                        echo "<tr><td colspan='7' class='text-center'>Tidak ada data ditemukan.</td></tr>";
+                                        echo "<tr><td colspan='6' class='text-center'>Tidak ada data ditemukan.</td></tr>";
                                     }
                                     ?>
                                     </tbody>
@@ -192,7 +190,7 @@ if (!login_check()) {
             unset($_SESSION['flash_message']);
         } elseif (isset($_GET['status'])) {
             $status = $_GET['status'];
-            $dataapa_uc = "Supplier";
+            $dataapa_uc = "Pelanggan";
             $title = ''; $message = ''; $type = '';
             switch ($status) {
                 case 'delete_success':

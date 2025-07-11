@@ -40,7 +40,7 @@ $atributPages = ['kategori', 'add_kategori', 'edit_kategori', 'merek', 'add_mere
 $aktivitasPages = ['stok_masuk', 'stok_keluar', 'surat_kelola', 'stok_in', 'stok_out', 'stok_masuk_detail','stok_keluar_detail'];
 $stokPages = ['stok_barang', 'stok_menipis', 'mutasi',  'stok_sesuaikan',]; // Ditambahkan
 $laporanPages = ['laporan_stok', 'laporan_penyesuaian', 'laporan_arus']; // Ditambahkan
-$supplierPelangganPages = ['supplier', 'add_supplier', 'edit_supplier', 'customer', 'add_customer', 'edit_customer'];
+$supplierPelangganPages = ['supplier', 'add_supplier', 'edit_supplier', 'site', 'add_site', 'edit_site'];
 $manajemenUserPages = ['admin', 'add_admin', 'edit_admin', 'add_jabatan', 'edit_jabatan'];
 $pengaturanPages = ['set_general', 'set_themes', 'backup'];
 
@@ -112,10 +112,10 @@ $pengaturanPages = ['set_general', 'set_themes', 'backup'];
 
             <?php if (($chmenu2 ?? 0) >= 1 || ($_SESSION['jabatan'] ?? '') == 'admin'): ?>
             <li class="treeview <?php if (in_array($currentPage, $supplierPelangganPages)) echo 'active menu-open'; ?>">
-                <a href="#"><i class="fa fa-users"></i> <span>Supplier & Pelanggan</span> <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
+                <a href="#"><i class="fa fa-users"></i> <span>Supplier & Site</span> <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
                 <ul class="treeview-menu">
                     <li class="<?php if ($currentPage == 'supplier' || $currentPage == 'add_supplier' || $currentPage == 'edit_supplier') echo 'active'; ?>"><a href="supplier"><i class="fa fa-circle-o"></i> Data Supplier</a></li>
-                    <li class="<?php if ($currentPage == 'customer' || $currentPage == 'add_customer' || $currentPage == 'edit_customer') echo 'active'; ?>"><a href="customer"><i class="fa fa-circle-o"></i> Data Pelanggan</a></li>
+                    <li class="<?php if ($currentPage == 'site' || $currentPage == 'add_site' || $currentPage == 'edit_site') echo 'active'; ?>"><a href="site"><i class="fa fa-circle-o"></i> Data Site</a></li>
                 </ul>
             </li>
             <?php endif; ?>
