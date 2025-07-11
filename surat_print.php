@@ -120,7 +120,7 @@ $nota=$_GET['nota'];
           <tr>
             <th width="596" align="center"><h2><?php echo $pt;?></h2></th>
 
-            <th width="200" rowspan="3" scope="col"><img src="<?php echo $avatar;?>" width="180" height="80"></th>
+            <th width="200" rowspan="3" scope="col"><img src="<?php echo $avatar;?>" width="100" height="100"></th>
             </tr>
       <tr>
         <th width="596" align="center"><h3><?php echo $address;?> | <?php echo $phone;?></h3></th>
@@ -225,7 +225,7 @@ $nota=$_GET['nota'];
   </tr>
 </tbody>
 </table>
-<label><h5>#<?php echo $ket;?></h5></label><br>
+<label><h5><?php echo $ket;?></h5></label><br>
 
 
  <script>
