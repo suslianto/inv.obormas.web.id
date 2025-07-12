@@ -77,11 +77,29 @@ if(isset($_POST["keluar"])){
                     $sql2 = "INSERT INTO stok_keluar_daftar (nota, kode_barang, nama, jumlah, subbeli, subtotal) VALUES ('$nota', '$kode', '$nama', '$jumlah', '$modal', '$total')";
                     mysqli_query($conn, $sql2);
                 }
+
+                // START: LOGIKA MUTASI DIPERBARUI
+                $usr_nama = $_SESSION['nama'];
+                $tgl_mutasi = date('Y-m-d');
+                $sql_cek_mutasi = "SELECT * FROM mutasi WHERE keterangan='$nota' AND kodebarang='$kode' AND kegiatan='$kegiatan'";
+                $res_mutasi = mysqli_query($conn, $sql_cek_mutasi);
+
+                if (mysqli_num_rows($res_mutasi) > 0) {
+                    $q_mutasi = mysqli_fetch_assoc($res_mutasi);
+                    $jumlah_mutasi_lama = (int)$q_mutasi['jumlah'];
+                    $jumlah_mutasi_baru = $jumlah_mutasi_lama + $jumlah;
+                    $sqlu_mutasi = "UPDATE mutasi SET jumlah='$jumlah_mutasi_baru', sisa='$newstok' WHERE keterangan='$nota' AND kodebarang='$kode'";
+                    mysqli_query($conn, $sqlu_mutasi);
+                } else {
+                    $sql_ins_mutasi = "INSERT INTO mutasi (kodebarang, namauser, tgl, kegiatan, jumlah, sisa, keterangan, status) VALUES ('$kode', '$usr_nama', '$tgl_mutasi', '$kegiatan', '$jumlah', '$newstok', '$nota', 'pending')";
+                    mysqli_query($conn, $sql_ins_mutasi);
+                }
+                // END: LOGIKA MUTASI DIPERBARUI
             }
         } else {
-             if($jumlah > $stok) {
+            if($jumlah > $stok) {
                 $_SESSION['flash_message'] = ['type' => 'error', 'message' => 'Jumlah keluar tidak boleh lebih besar dari stok tersedia!'];
-             }
+            }
         }
         header("Location: $halaman?nota=$nota");
         exit();
@@ -285,7 +303,6 @@ menu();
                                                 <td><?php echo htmlspecialchars($fill['jumlah']); ?></td>
                                                 <td>
                                                 <?php if ($chmod >= 4 || $_SESSION['jabatan'] == 'admin') { 
-                                                    // PERBAIKAN: Menambahkan parameter forwardpage ke URL Hapus
                                                     $delete_url = "component/delete/delete_stok.php?keg=out&barang=".$fill['kode_barang']."&nota=".$fill['nota']."&jumlah=".$fill['jumlah']."&no=".$fill['no']."&forwardpage=".$halaman;
                                                 ?>
                                                     <a href="<?php echo $delete_url; ?>" class="btn btn-danger btn-xs"><i class='fa fa-trash'></i></a>
@@ -347,15 +364,6 @@ menu();
                                         </div>
                                         <br>
 
-                                        <!-- <div class="row">
-                                            <div class="form-group col-md-12 col-xs-12">
-                                                <label for="nopol" class="col-sm-2 control-label">No. Polisi:</label>
-                                                <div class="col-sm-10">
-                                                    <input type="text" class="form-control" name="nopol" placeholder="Opsional">
-                                                </div>
-                                            </div>
-                                        </div> -->
-
                                         <div class="row">
                                             <div class="form-group col-md-12 col-xs-12">
                                                 <label for="ket" class="col-sm-2 control-label">Keterangan:</label>
@@ -390,7 +398,6 @@ menu();
     <div class="control-sidebar-bg"></div>
 </div>
 
-<!-- Script -->
 <script src="dist/plugins/jQuery/jquery-2.2.3.min.js"></script>
 <script src="dist/bootstrap/js/bootstrap.min.js"></script>
 <script src="dist/plugins/select2/select2.full.min.js"></script>

@@ -72,6 +72,24 @@ if(isset($_POST["masuk"])){
                     $sql2 = "INSERT INTO stok_masuk_daftar (nota, kode_barang, nama, jumlah, no) VALUES ('$nota', '$kode', '$nama', '$jumlah', NULL)";
                     mysqli_query($conn, $sql2);
                 }
+
+                // START: LOGIKA MUTASI DIPERBARUI
+                $usr_nama = $_SESSION['nama']; 
+                $tgl_mutasi = date('Y-m-d');
+                $sql_cek_mutasi = "SELECT * FROM mutasi WHERE keterangan='$nota' AND kodebarang='$kode' AND kegiatan='$kegiatan'";
+                $res_mutasi = mysqli_query($conn, $sql_cek_mutasi);
+
+                if (mysqli_num_rows($res_mutasi) > 0) {
+                    $q_mutasi = mysqli_fetch_assoc($res_mutasi);
+                    $jumlah_mutasi_lama = (int)$q_mutasi['jumlah'];
+                    $jumlah_mutasi_baru = $jumlah_mutasi_lama + $jumlah;
+                    $sqlu_mutasi = "UPDATE mutasi SET jumlah='$jumlah_mutasi_baru', sisa='$newstok' WHERE keterangan='$nota' AND kodebarang='$kode'";
+                    mysqli_query($conn, $sqlu_mutasi);
+                } else {
+                    $sql_ins_mutasi = "INSERT INTO mutasi (kodebarang, namauser, tgl, kegiatan, jumlah, sisa, keterangan, status) VALUES ('$kode', '$usr_nama', '$tgl_mutasi', '$kegiatan', '$jumlah', '$newstok', '$nota', 'pending')";
+                    mysqli_query($conn, $sql_ins_mutasi);
+                }
+                // END: LOGIKA MUTASI DIPERBARUI
             }
         }
         header("Location: $halaman?nota=$nota");
@@ -94,7 +112,7 @@ if(isset($_POST["simpan"])){
         if(mysqli_num_rows($cek_item) > 0) {
             $sql2 = "INSERT INTO stok_masuk VALUES ('$nota', '$cab', '$tgl', '$sup', '$usr', '')";
             if(mysqli_query($conn, $sql2)){
-                $mut = "UPDATE mutasi SET status='berhasil', tujuan='$sup' WHERE keterangan='$nota' AND kegiatan='stok masuk'";
+                $mut = "UPDATE mutasi SET status='berhasil', tujuan='$sup' WHERE keterangan='$nota' AND kegiatan='Stok Masuk'";
                 mysqli_query($conn, $mut);
                 $_SESSION['flash_message'] = ['type' => 'success', 'message' => 'Transaksi stok masuk berhasil disimpan!'];
             } else {
@@ -105,7 +123,6 @@ if(isset($_POST["simpan"])){
             $_SESSION['flash_message'] = ['type' => 'warning', 'message' => 'Tidak ada item di dalam daftar!'];
         }
         
-        // PERUBAHAN: Mengarahkan ke halaman daftar stok masuk
         header("Location: stok_masuk.php");
         exit();
     }
@@ -305,7 +322,6 @@ menu();
     <div class="control-sidebar-bg"></div>
 </div>
 
-<!-- Script -->
 <script src="dist/plugins/jQuery/jquery-2.2.3.min.js"></script>
 <script src="dist/bootstrap/js/bootstrap.min.js"></script>
 <script src="dist/plugins/select2/select2.full.min.js"></script>
