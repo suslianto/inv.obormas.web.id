@@ -86,7 +86,7 @@ menu();
                                         <th>Nomor Surat</th>
                                         <th>Tanggal</th>
                                         <th>Tujuan</th>
-                                        <th>Driver</th>
+                                        <th>Dibawa</th>
                                         <?php if ($chmod >= 3 || $_SESSION['jabatan'] == 'admin') { ?>
                                             <th>Opsi</th>
                                         <?php } ?>
