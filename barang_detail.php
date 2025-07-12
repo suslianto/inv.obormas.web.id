@@ -179,7 +179,7 @@ if ($result_mutasi) {
                                                         <tr>
                                                             <td><?php echo $no_mutasi;?></td>
                                                             <td><?php echo htmlspecialchars(date("d-m-Y H:i", strtotime($fill_mutasi['tgl'] . ' ' . $fill_mutasi['jam']))); ?></td>
-                                                            <td><?php echo htmlspecialchars($fill_mutasi['user']); ?></td>
+                                                            <td><?php echo htmlspecialchars($fill_mutasi['namauser']); ?></td>
                                                             <td><?php echo htmlspecialchars($fill_mutasi['kegiatan']); ?></td>
                                                             <td><?php echo htmlspecialchars($fill_mutasi['jumlah']); ?></td>
                                                             <td><?php echo htmlspecialchars($fill_mutasi['sisa']); ?></td>

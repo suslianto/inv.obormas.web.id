@@ -36,7 +36,7 @@ if ($chmenu5 >= 4 || $_SESSION['jabatan'] == 'admin') {
         mysqli_query($conn, $sql_delete_mutasi);
 
         // Set pesan sukses jika diperlukan
-        $_SESSION['flash_message'] = ['type' => 'info', 'message' => 'Penyesuaian untuk barang telah dibatalkan.'];
+        // $_SESSION['flash_message'] = ['type' => 'info', 'message' => 'Penyesuaian untuk barang telah dibatalkan.'];
 
     } else {
         // Jika gagal mengembalikan stok, beri pesan error
