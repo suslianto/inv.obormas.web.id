@@ -1,299 +1,173 @@
+<?php
+// ===================================================================
+// KONFIGURASI DAN INISIALISASI
+// ===================================================================
+include "configuration/config_etc.php";
+include "configuration/config_include.php";
+etc();
+encryption();
+session();
+connect();
+head();
+body();
+timing();
+pagination();
+
+// ===================================================================
+// CEK STATUS LOGIN
+// ===================================================================
+if (!login_check()) {
+    echo '<meta http-equiv="refresh" content="0; url=logout" />';
+    exit(0);
+}
+
+// ===================================================================
+// PENGATURAN HALAMAN
+// ===================================================================
+error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
+$halaman = "set_themes";
+$dataapa = "Themes";
+$alert_script = ""; // Variabel untuk menyimpan skrip SweetAlert
+
+// ===================================================================
+// PROSES PEMILIHAN TEMA
+// ===================================================================
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['pilih_tema'])) {
+    if ($_SESSION['jabatan'] == 'admin') {
+        $pilih = mysqli_real_escape_string($conn, $_POST['pilih_tema']);
+        
+        $sql_check = "SELECT * FROM backset";
+        $result_check = mysqli_query($conn, $sql_check);
+
+        if (mysqli_num_rows($result_check) > 0) {
+            $sql_update = "UPDATE backset SET themesback='$pilih'";
+            $proses = mysqli_query($conn, $sql_update);
+        } else {
+            $sql_insert = "INSERT INTO backset (themesback) VALUES ('$pilih')";
+            $proses = mysqli_query($conn, $sql_insert);
+        }
+
+        if ($proses) {
+            $alert_script = "swal('Berhasil!', 'Tema telah berhasil diubah.', 'success').then(function(){ window.location = '$halaman'; });";
+        } else {
+            $alert_script = "swal('Gagal!', 'Terjadi kesalahan saat mengubah tema.', 'error');";
+        }
+    } else {
+        $alert_script = "swal('Akses Ditolak!', 'Hanya admin yang dapat mengubah tema.', 'error');";
+    }
+}
+
+// ===================================================================
+// AMBIL TEMA AKTIF
+// ===================================================================
+$sql_theme = "SELECT themesback FROM backset LIMIT 1";
+$hasil_theme = mysqli_query($conn, $sql_theme);
+$data_theme = mysqli_fetch_assoc($hasil_theme);
+$tema_aktif = $data_theme ? $data_theme['themesback'] : '1'; // Default theme 1 jika belum ada
+
+// Array tema untuk memudahkan looping
+$themes = [
+    ['id' => '1', 'name' => 'Default Theme', 'image' => 'dist/img/themes/default.jpg'],
+    ['id' => '2', 'name' => 'Blue Theme', 'image' => 'dist/img/themes/blue.jpg'],
+    ['id' => '3', 'name' => 'Green Theme', 'image' => 'dist/img/themes/green.jpg'],
+    ['id' => '4', 'name' => 'Purple Theme', 'image' => 'dist/img/themes/purple.jpg'],
+    ['id' => '5', 'name' => 'Red Theme', 'image' => 'dist/img/themes/red.jpg'],
+    ['id' => '6', 'name' => 'Yellow Theme', 'image' => 'dist/img/themes/yellow.jpg'],
+];
+?>
 <!DOCTYPE html>
 <html>
-<?php
-include "configuration/config_include.php";
-etc();encryption();session();connect();head();body();timing();
-//alltotal();
-//pagination();
-?>
-
-<?php
-if (!login_check()) {
-?>
-<meta http-equiv="refresh" content="0; url=logout" />
-<?php
-exit(0);
-}
-?>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Pengaturan Tema</title>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <style>
+        .thumbnail {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            transition: box-shadow .3s;
+            /* Perbaikan: Hapus height: 100% agar tinggi kartu menyesuaikan konten */
+        }
+        .thumbnail:hover {
+            box-shadow: 0 0 11px rgba(33,33,33,.2);
+        }
+        .thumbnail .caption {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .theme-active-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background-color: #00a65a;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body class="hold-transition skin-purple sidebar-mini">
 <div class="wrapper">
-<?php
-theader();
-menu();
-?>
-            <div class="content-wrapper">
-                <!-- Content Header (Page header) -->
-                <section class="content-header">
-</section>
-                <!-- Main content -->
-                <section class="content">
-                    <!-- Small boxes (Stat box) -->
-                    <div class="row">
-                        <!-- ./col -->
+    <?php
+    theader();
+    menu();
+    ?>
+    <div class="content-wrapper">
+        <section class="content-header"></section>
+        <section class="content">
+            <ol class="breadcrumb">
+                <li><a href="#">Pengaturan</a></li>
+                <li class="active"><?php echo $dataapa; ?></li>
+            </ol>
 
-<!-- SETTING START-->
-
-<?php
-error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
-$halaman = "set_themes"; // halaman
-$dataapa = "Themes"; // data
-$tabeldatabase = ""; // tabel database
-$forward = mysqli_real_escape_string($conn, $tabeldatabase); // tabel database
-$forwardpage = mysqli_real_escape_string($conn, $halaman); // halaman
-$search = $_POST['search'];
-?>
-
-<!-- SETTING STOP -->
-
-
-<!-- BREADCRUMB -->
-<div class="col-lg-12">
-<ol class="breadcrumb ">
-<li><a href="#">Themes</a></li>
-</ol>
-</div>
-
-<!-- BREADCRUMB -->
-
-
-
-
-                                <!-- /.box-body -->
-
-                        <!-- ./col -->
-
-                </div>
-
-
-                <div class="row">
-                <?php if($_SESSION['jabatan'] !='admin'){}else{ ?>
-              <div class="col-sm-6 col-md-4">
-    <div class="thumbnail">
-      <img src="dist/img/themes/default.jpg" alt="..." class="img-thumbnail">
-      <div class="caption" align="right">
-        <h4 align="center">Default Theme</h4>
-    <form action="set_themes" method="post">
-    <button type="submit" class="btn btn-sm btn-default btn-flat" name="pilih1" ><span class="glyphicon glyphicon-check"></span> Pilih Theme</button>
-    </form>
-    </div>
-    </div>
-  </div>
-
-                <div class="col-sm-6 col-md-4">
-    <div class="thumbnail">
-      <img src="dist/img/themes/blue.jpg" alt="..." class="img-thumbnail">
-      <div class="caption" align="right">
-        <h4 align="center">Blue Theme</h4>
-    <form action="set_themes" method="post">
-    <button type="submit" class="btn btn-sm btn-default btn-flat" name="pilih2"><span class="glyphicon glyphicon-check"></span> Pilih Theme</button>
-    </form>
-    </div>
-    </div>
-  </div>
-
-                <div class="col-sm-6 col-md-4">
-    <div class="thumbnail">
-      <img src="dist/img/themes/green.jpg" alt="..." class="img-thumbnail">
-      <div class="caption" align="right">
-        <h4 align="center">Green Theme</h4>
-    <form action="set_themes" method="post">
-    <button type="submit" class="btn btn-sm btn-default btn-flat" name="pilih3"><span class="glyphicon glyphicon-check"></span> Pilih Theme</button>
-    </form>
-    </div>
-    </div>
-  </div>
-
-                <div class="col-sm-6 col-md-4">
-    <div class="thumbnail">
-      <img src="dist/img/themes/purple.jpg" alt="..." class="img-thumbnail">
-      <div class="caption" align="right">
-        <h4 align="center">Purple Theme</h4>
-    <form action="set_themes" method="post">
-    <button type="submit" class="btn btn-sm btn-default btn-flat" name="pilih4"><span class="glyphicon glyphicon-check"></span> Pilih Theme</button>
-    </form>
-    </div>
-    </div>
-  </div>
-
-                <div class="col-sm-6 col-md-4">
-    <div class="thumbnail">
-      <img src="dist/img/themes/red.jpg" alt="..." class="img-thumbnail">
-      <div class="caption" align="right">
-        <h4 align="center">Red Theme</h4>
-    <form action="set_themes" method="post">
-    <button type="submit" class="btn btn-sm btn-default btn-flat" name="pilih5"><span class="glyphicon glyphicon-check"></span> Pilih Theme</button>
-    </form>
-    </div>
-    </div>
-  </div>
-
-                <div class="col-sm-6 col-md-4">
-    <div class="thumbnail">
-      <img src="dist/img/themes/yellow.jpg" alt="..." class="img-thumbnail">
-      <div class="caption" align="right">
-        <h4 align="center">Yellow Theme</h4>
-    <form action="set_themes" method="post">
-    <button type="submit" class="btn btn-sm btn-default btn-flat" name="pilih6"><span class="glyphicon glyphicon-check"></span> Pilih Theme</button>
-    </form>
-    </div>
-    </div>
-  </div>
-
-
-              <?php } ?>
-                </div>
-
-    <?php  if($_SERVER["REQUEST_METHOD"] == "POST"){
-
-
-        if(isset($_POST['pilih1'])){
-          $pilih = '1';
-           $sql="select * from backset";
-                  $result=mysqli_query($conn,$sql);
-
-              if(mysqli_num_rows($result)>0){
-
-           $sql1 = "update backset set themesback='$pilih'";
-             $result = mysqli_query($conn, $sql1);?>
-             <?php echo "<script type='text/javascript'>window.location = '$forwardpage';</script>"; ?><?php
-        }else{
-                $sql1 = "insert into backset (themesback) values('$pilih')";
-              $result = mysqli_query($conn, $sql1);?>
-              <?php echo "<script type='text/javascript'>window.location = '$forwardpage';</script>"; ?><?php
-        }
-          }
-
-    if(isset($_POST['pilih2'])){
-          $pilih = '2';
-           $sql="select * from backset";
-                  $result=mysqli_query($conn,$sql);
-
-              if(mysqli_num_rows($result)>0){
-
-           $sql1 = "update backset set themesback='$pilih'";
-             $result = mysqli_query($conn, $sql1);?>
-             <?php echo "<script type='text/javascript'>window.location = '$forwardpage';</script>"; ?><?php
-
-        }else{
-                $sql1 = "insert into backset (themesback) values('$pilih')";
-              $result = mysqli_query($conn, $sql1);?>
-              <?php echo "<script type='text/javascript'>window.location = '$forwardpage';</script>"; ?><?php
-        }
-          }
-
-    if(isset($_POST['pilih3'])){
-          $pilih = '3';
-           $sql="select * from backset";
-                  $result=mysqli_query($conn,$sql);
-
-              if(mysqli_num_rows($result)>0){
-
-           $sql1 = "update backset set themesback='$pilih'";
-             $result = mysqli_query($conn, $sql1);?>
-             <?php echo "<script type='text/javascript'>window.location = '$forwardpage';</script>"; ?><?php
-
-        }else{
-                $sql1 = "insert into backset (themesback) values('$pilih')";
-              $result = mysqli_query($conn, $sql1);?>
-              <?php echo "<script type='text/javascript'>window.location = '$forwardpage';</script>"; ?><?php
-        }
-          }
-
-    if(isset($_POST['pilih4'])){
-          $pilih = '4';
-           $sql="select * from backset";
-                  $result=mysqli_query($conn,$sql);
-
-              if(mysqli_num_rows($result)>0){
-
-           $sql1 = "update backset set themesback='$pilih'";
-             $result = mysqli_query($conn, $sql1);?>
-             <?php echo "<script type='text/javascript'>window.location = '$forwardpage';</script>"; ?><?php
-
-        }else{
-                $sql1 = "insert into backset (themesback) values('$pilih')";
-              $result = mysqli_query($conn, $sql1);?>
-              <?php echo "<script type='text/javascript'>window.location = '$forwardpage';</script>"; ?><?php
-        }
-          }
-
-    if(isset($_POST['pilih5'])){
-          $pilih = '5';
-           $sql="select * from backset";
-                  $result=mysqli_query($conn,$sql);
-
-              if(mysqli_num_rows($result)>0){
-
-           $sql1 = "update backset set themesback='$pilih'";
-             $result = mysqli_query($conn, $sql1);?>
-             <?php echo "<script type='text/javascript'>window.location = '$forwardpage';</script>"; ?><?php
-
-        }else{
-                $sql1 = "insert into backset (themesback) values('$pilih')";
-              $result = mysqli_query($conn, $sql1);?>
-              <?php echo "<script type='text/javascript'>window.location = '$forwardpage';</script>"; ?><?php
-        }
-          }
-
-    if(isset($_POST['pilih6'])){
-          $pilih = '6';
-           $sql="select * from backset";
-                  $result=mysqli_query($conn,$sql);
-
-              if(mysqli_num_rows($result)>0){
-
-           $sql1 = "update backset set themesback='$pilih'";
-             $result = mysqli_query($conn, $sql1);?>
-             <?php echo "<script type='text/javascript'>window.location = '$forwardpage';</script>"; ?><?php
-
-        }else{
-                $sql1 = "insert into backset (themesback) values('$pilih')";
-              $result = mysqli_query($conn, $sql1);?>
-              <?php echo "<script type='text/javascript'>window.location = '$forwardpage';</script>"; ?><?php
-        }
-          }
-    }?>
-                                <!-- /.box-body -->
-                            </div>
-
-            <!-- BATAS -->
+            <?php if ($_SESSION['jabatan'] == 'admin') : ?>
+            <div class="row">
+                <?php foreach ($themes as $theme) : ?>
+                <div class="col-sm-6 col-md-3" style="margin-bottom: 20px;">
+                    <div class="thumbnail">
+                        <?php if ($tema_aktif == $theme['id']) : ?>
+                            <span class="theme-active-badge"><i class="fa fa-check"></i> Aktif</span>
+                        <?php endif; ?>
+                        <img src="<?php echo $theme['image']; ?>" alt="<?php echo $theme['name']; ?>" class="img-responsive">
+                        <div class="caption">
+                            <h4><?php echo $theme['name']; ?></h4>
+                            <form action="" method="post">
+                                <button type="submit" class="btn btn-primary btn-flat" name="pilih_tema" value="<?php echo $theme['id']; ?>" <?php if ($tema_aktif == $theme['id']) echo 'disabled'; ?>>
+                                    <i class="fa fa-paint-brush"></i> Pilih Tema
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                    <!-- /.row -->
-                    <!-- Main row -->
-                    <div class="row">
-                    </div>
-                    <!-- /.row (main row) -->
-                </section>
-                <!-- /.content -->
+                </div>
+                <?php endforeach; ?>
             </div>
-            <!-- /.content-wrapper -->
-                   <?php footer();?>
-            <div class="control-sidebar-bg"></div>
-        </div>
-              <script src="dist/plugins/jQuery/jquery-2.2.3.min.js"></script>
-        <script src="libs/1.11.4-jquery-ui.min.js"></script>
-        <script>
-  $.widget.bridge('uibutton', $.ui.button);
+            <?php else : ?>
+                <div class="callout callout-danger">
+                    <h4>Akses Ditolak!</h4>
+                    <p>Hanya admin yang dapat mengakses halaman ini.</p>
+                </div>
+            <?php endif; ?>
+        </section>
+    </div>
+    <?php footer(); ?>
+    <div class="control-sidebar-bg"></div>
+</div>
+<!-- ./wrapper -->
+<script src="dist/plugins/jQuery/jquery-2.2.3.min.js"></script>
+<script src="dist/bootstrap/js/bootstrap.min.js"></script>
+<script src="dist/plugins/slimScroll/jquery.slimscroll.min.js"></script>
+<script src="dist/plugins/fastclick/fastclick.js"></script>
+<script src="dist/js/app.min.js"></script>
+<script>
+    // Jalankan skrip SweetAlert jika ada
+    <?php if (!empty($alert_script)) : ?>
+        document.addEventListener("DOMContentLoaded", function() {
+            <?php echo $alert_script; ?>
+        });
+    <?php endif; ?>
 </script>
-        <script src="dist/bootstrap/js/bootstrap.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
-        <script src="dist/plugins/morris/morris.min.js"></script>
-        <script src="dist/plugins/sparkline/jquery.sparkline.min.js"></script>
-        <script src="dist/plugins/jvectormap/jquery-jvectormap-1.2.2.min.js"></script>
-        <script src="dist/plugins/jvectormap/jquery-jvectormap-world-mill-en.js"></script>
-        <script src="dist/plugins/knob/jquery.knob.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.11.2/moment.min.js"></script>
-        <script src="dist/plugins/daterangepicker/daterangepicker.js"></script>
-        <script src="dist/plugins/datepicker/bootstrap-datepicker.js"></script>
-        <script src="dist/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js"></script>
-        <script src="dist/plugins/slimScroll/jquery.slimscroll.min.js"></script>
-        <script src="dist/plugins/fastclick/fastclick.js"></script>
-        <script src="dist/js/app.min.js"></script>
-        <script src="dist/js/pages/dashboard.js"></script>
-        <script src="dist/js/demo.js"></script>
-    <script src="dist/plugins/datatables/jquery.dataTables.min.js"></script>
-    <script src="dist/plugins/datatables/dataTables.bootstrap.min.js"></script>
-    <script src="dist/plugins/slimScroll/jquery.slimscroll.min.js"></script>
-    <script src="dist/plugins/fastclick/fastclick.js"></script>
-
-    </body>
+</body>
 </html>
